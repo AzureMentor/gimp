@@ -41,8 +41,9 @@
 /*  public functions */
 
 void
-images_raise_views_cmd_callback (GtkAction *action,
-                                 gpointer   data)
+images_raise_views_cmd_callback (GimpAction *action,
+                                 GVariant   *value,
+                                 gpointer    data)
 {
   GimpContainerEditor *editor = GIMP_CONTAINER_EDITOR (data);
   GimpContainer       *container;
@@ -71,8 +72,9 @@ images_raise_views_cmd_callback (GtkAction *action,
 }
 
 void
-images_new_view_cmd_callback (GtkAction *action,
-                              gpointer   data)
+images_new_view_cmd_callback (GimpAction *action,
+                              GVariant   *value,
+                              gpointer    data)
 {
   GimpContainerEditor *editor = GIMP_CONTAINER_EDITOR (data);
   GimpContainer       *container;
@@ -92,8 +94,9 @@ images_new_view_cmd_callback (GtkAction *action,
 }
 
 void
-images_delete_image_cmd_callback (GtkAction *action,
-                                  gpointer   data)
+images_delete_image_cmd_callback (GimpAction *action,
+                                  GVariant   *value,
+                                  gpointer    data)
 {
   GimpContainerEditor *editor = GIMP_CONTAINER_EDITOR (data);
   GimpContainer       *container;

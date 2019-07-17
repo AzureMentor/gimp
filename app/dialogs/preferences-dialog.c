@@ -1636,6 +1636,10 @@ prefs_dialog_new (Gimp       *gimp,
   /*  General  */
   vbox2 = prefs_frame_new (_("General"), GTK_CONTAINER (vbox), FALSE);
 
+  prefs_check_button_add (object, "edit-non-visible",
+                          _("Allow _editing on non-visible layers"),
+                          GTK_BOX (vbox2));
+
   prefs_check_button_add (object, "save-tool-options",
                           _("_Save tool options on exit"),
                           GTK_BOX (vbox2));
@@ -2627,6 +2631,15 @@ prefs_dialog_new (Gimp       *gimp,
                             _("Check _size:"),
                             GTK_GRID (grid), 1, size_group);
 
+  /*  Zoom Quality  */
+  vbox2 = prefs_frame_new (_("Zoom Quality"), GTK_CONTAINER (vbox), FALSE);
+  grid = prefs_grid_new (GTK_CONTAINER (vbox2));
+
+  prefs_enum_combo_box_add (object, "zoom-quality", 0, 0,
+                            _("_Zoom quality:"),
+                            GTK_GRID (grid), 0, size_group);
+
+  /*  Monitor Resolution  */
   vbox2 = prefs_frame_new (_("Monitor Resolution"),
                            GTK_CONTAINER (vbox), FALSE);
 

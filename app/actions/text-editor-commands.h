@@ -19,13 +19,15 @@
 #define __TEXT_EDITOR_COMMANDS_H__
 
 
-void   text_editor_load_cmd_callback      (GtkAction *action,
-                                           gpointer   data);
-void   text_editor_clear_cmd_callback     (GtkAction *action,
-                                           gpointer   data);
-void   text_editor_direction_cmd_callback (GtkAction *action,
-                                           GtkAction *current,
-                                           gpointer   data);
+void   text_editor_load_cmd_callback      (GimpAction *action,
+                                           GVariant   *value,
+                                           gpointer    data);
+void   text_editor_clear_cmd_callback     (GimpAction *action,
+                                           GVariant   *value,
+                                           gpointer    data);
+void   text_editor_direction_cmd_callback (GimpAction *action,
+                                           GVariant   *value,
+                                           gpointer    data);
 
 
 #endif /* __TEXT_EDITOR_COMMANDS_H__ */

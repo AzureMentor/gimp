@@ -60,14 +60,15 @@
 #define PLUG_IN_BINARY "file-tiff"
 
 
-static void       query               (void);
-static void       run                 (const gchar      *name,
-                                       gint              nparams,
-                                       const GimpParam  *param,
-                                       gint             *nreturn_vals,
-                                       GimpParam       **return_vals);
+static void       query                (void);
+static void       run                  (const gchar      *name,
+                                        gint              nparams,
+                                        const GimpParam  *param,
+                                        gint             *nreturn_vals,
+                                        GimpParam       **return_vals);
 
-static gboolean   image_is_monochrome (gint32            image);
+static gboolean   image_is_monochrome  (gint32            image);
+static gboolean   image_is_multi_layer (gint32            image);
 
 
 const GimpPlugInInfo PLUG_IN_INFO =
@@ -271,19 +272,6 @@ run (const gchar      *name,
         case GIMP_RUN_INTERACTIVE:
         case GIMP_RUN_WITH_LAST_VALS:
           gimp_ui_init (PLUG_IN_BINARY, FALSE);
-
-          export = gimp_export_image (&image, &drawable, "TIFF",
-                                      GIMP_EXPORT_CAN_HANDLE_RGB     |
-                                      GIMP_EXPORT_CAN_HANDLE_GRAY    |
-                                      GIMP_EXPORT_CAN_HANDLE_INDEXED |
-                                      GIMP_EXPORT_CAN_HANDLE_ALPHA   |
-                                      GIMP_EXPORT_CAN_HANDLE_LAYERS);
-
-          if (export == GIMP_EXPORT_CANCEL)
-            {
-              values[0].data.d_status = GIMP_PDB_CANCEL;
-              return;
-            }
           break;
         default:
           break;
@@ -333,6 +321,7 @@ run (const gchar      *name,
                              gimp_drawable_has_alpha (drawable),
                              image_is_monochrome (image),
                              gimp_image_base_type (image) == GIMP_INDEXED,
+                             image_is_multi_layer (image),
                              &image_comment))
             {
               status = GIMP_PDB_CANCEL;
@@ -385,40 +374,47 @@ run (const gchar      *name,
           break;
         }
 
+      switch (run_mode)
+        {
+        case GIMP_RUN_INTERACTIVE:
+        case GIMP_RUN_WITH_LAST_VALS:
+            {
+              GimpExportCapabilities capabilities;
+
+              if (tsvals.compression == COMPRESSION_CCITTFAX3 ||
+                  tsvals.compression == COMPRESSION_CCITTFAX4)
+                /* G3/G4 are fax compressions. They only support
+                 * monochrome images without alpha support.
+                 */
+                capabilities = GIMP_EXPORT_CAN_HANDLE_INDEXED;
+              else
+                capabilities = GIMP_EXPORT_CAN_HANDLE_RGB     |
+                               GIMP_EXPORT_CAN_HANDLE_GRAY    |
+                               GIMP_EXPORT_CAN_HANDLE_INDEXED |
+                               GIMP_EXPORT_CAN_HANDLE_ALPHA;
+
+              if (tsvals.save_layers && image_is_multi_layer (image))
+                capabilities |= GIMP_EXPORT_CAN_HANDLE_LAYERS;
+
+              export = gimp_export_image (&image, &drawable, "TIFF", capabilities);
+
+              if (export == GIMP_EXPORT_CANCEL)
+                {
+                  values[0].data.d_status = GIMP_PDB_CANCEL;
+                  return;
+                }
+            }
+          break;
+        default:
+          break;
+        }
+
       if (status == GIMP_PDB_SUCCESS)
         {
           GFile *file;
           gint   saved_bpp;
 
           file = g_file_new_for_uri (param[3].data.d_string);
-
-          /* saving with layers is not supporting blend modes, so people might
-           * prefer to save a flat copy. */
-          if (! tsvals.save_layers)
-            {
-              gint32 transp;
-
-              if (export != GIMP_EXPORT_EXPORT)
-                {
-                  image    = gimp_image_duplicate (image);
-                  drawable = gimp_image_get_active_layer (image);
-
-                  export = GIMP_EXPORT_EXPORT;
-                }
-
-              /* borrowed from ./libgimp/gimpexport.c:export_merge()
-               * this makes sure that the exported file size is correct. */
-              transp = gimp_layer_new (image, "-",
-                                       gimp_image_width (image),
-                                       gimp_image_height (image),
-                                       gimp_drawable_type (drawable) | 1,
-                                       100.0, GIMP_LAYER_MODE_NORMAL);
-              gimp_image_insert_layer (image, transp, -1, 1);
-              gimp_selection_none (image);
-              gimp_drawable_edit_clear (transp);
-
-              gimp_image_merge_visible_layers (image, GIMP_CLIP_TO_IMAGE);
-            }
 
           if (save_image (file, &tsvals, image, orig_image, image_comment,
                           &saved_bpp, metadata, metadata_flags, &error))
@@ -484,4 +480,16 @@ image_is_monochrome (gint32 image)
     }
 
   return monochrome;
+}
+
+static gboolean
+image_is_multi_layer (gint32 image)
+{
+  gint32 *layers;
+  gint32  n_layers;
+
+  layers = gimp_image_get_layers (image, &n_layers);
+  g_free (layers);
+
+  return (n_layers > 1);
 }

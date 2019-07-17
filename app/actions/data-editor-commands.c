@@ -30,13 +30,14 @@
 /*  public functions */
 
 void
-data_editor_edit_active_cmd_callback (GtkAction *action,
-                                      gpointer   data)
+data_editor_edit_active_cmd_callback (GimpAction *action,
+                                      GVariant   *value,
+                                      gpointer    data)
 {
   GimpDataEditor *editor = GIMP_DATA_EDITOR (data);
   gboolean        edit_active;
 
-  edit_active = gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action));
+  edit_active = g_variant_get_boolean (value);
 
   gimp_data_editor_set_edit_active (editor, edit_active);
 }

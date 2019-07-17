@@ -19,25 +19,30 @@
 #define __DASHBOARD_COMMANDS_H__
 
 
-void   dashboard_update_interval_cmd_callback        (GtkAction *action,
-                                                      GtkAction *current,
-                                                      gpointer   data);
-void   dashboard_history_duration_cmd_callback       (GtkAction *action,
-                                                      GtkAction *current,
-                                                      gpointer   data);
+void   dashboard_update_interval_cmd_callback        (GimpAction *action,
+                                                      GVariant   *value,
+                                                      gpointer    data);
+void   dashboard_history_duration_cmd_callback       (GimpAction *action,
+                                                      GVariant   *value,
+                                                      gpointer    data);
 
-void   dashboard_log_record_cmd_callback             (GtkAction *action,
-                                                      gpointer   data);
-void   dashboard_log_add_marker_cmd_callback         (GtkAction *action,
-                                                      gpointer   data);
-void   dashboard_log_add_empty_marker_cmd_callback   (GtkAction *action,
-                                                      gpointer   data);
+void   dashboard_log_record_cmd_callback             (GimpAction *action,
+                                                      GVariant   *value,
+                                                      gpointer    data);
+void   dashboard_log_add_marker_cmd_callback         (GimpAction *action,
+                                                      GVariant   *value,
+                                                      gpointer    data);
+void   dashboard_log_add_empty_marker_cmd_callback   (GimpAction *action,
+                                                      GVariant   *value,
+                                                      gpointer    data);
 
-void   dashboard_reset_cmd_callback                  (GtkAction *action,
-                                                      gpointer   data);
+void   dashboard_reset_cmd_callback                  (GimpAction *action,
+                                                      GVariant   *value,
+                                                      gpointer    data);
 
-void   dashboard_low_swap_space_warning_cmd_callback (GtkAction *action,
-                                                      gpointer   data);
+void   dashboard_low_swap_space_warning_cmd_callback (GimpAction *action,
+                                                      GVariant   *value,
+                                                      gpointer    data);
 
 
 #endif /* __DASHBOARD_COMMANDS_H__ */

@@ -19,8 +19,9 @@
 #define __DATA_EDITOR_COMMANDS_H__
 
 
-void   data_editor_edit_active_cmd_callback (GtkAction *action,
-                                             gpointer   data);
+void   data_editor_edit_active_cmd_callback (GimpAction *action,
+                                             GVariant   *value,
+                                             gpointer    data);
 
 
 #endif /* __DATA_EDITOR_COMMANDS_H__ */

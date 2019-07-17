@@ -260,6 +260,15 @@ static void              drawText                   (gint32           text_id,
                                                      gdouble          x_res,
                                                      gdouble          y_res);
 
+static gboolean          draw_layer                 (gint32          *layers,
+                                                     gint             n_layers,
+                                                     gint             j,
+                                                     cairo_t         *cr,
+                                                     gdouble          x_res,
+                                                     gdouble          y_res,
+                                                     const gchar     *name,
+                                                     GError         **error);
+
 static gboolean     dnd_remove = TRUE;
 static PdfMultiPage multi_page;
 
@@ -580,123 +589,24 @@ run (const gchar      *name,
       /* Now, we should loop over the layers of each image */
       for (j = 0; j < n_layers; j++)
         {
-          gint32           layer_ID;
-          gint32           mask_ID    = -1;
-          cairo_surface_t *mask_image = NULL;
-          gdouble          opacity;
-          gboolean         single_color;
-          gint             x, y;
-
-          if (optimize.reverse_order && optimize.layers_as_pages)
-            layer_ID = layers [j];
-          else
-            layer_ID = layers [n_layers - j - 1];
-
-          opacity = gimp_layer_get_opacity (layer_ID) / 100.0;
-
-          if ((gimp_item_get_visible (layer_ID) && opacity > 0.0) ||
-              ! optimize.ignore_hidden)
+          if (! draw_layer (layers, n_layers, j, cr, x_res, y_res, name, &error))
             {
-              mask_ID = gimp_layer_get_mask (layer_ID);
-              if (mask_ID != -1)
-                {
-                  mask_image = get_cairo_surface (mask_ID, TRUE,
-                                                  &error);
-                  if (error != NULL)
-                    {
-                      *nreturn_vals = 2;
+              *nreturn_vals = 2;
 
-                      /* free the resources */
-                      cairo_surface_destroy (pdf_file);
-                      cairo_destroy (cr);
-                      fclose (fp);
+              /* free the resources */
+              g_free (layers);
+              cairo_surface_destroy (pdf_file);
+              cairo_destroy (cr);
+              fclose (fp);
 
-                      values[0].data.d_status = GIMP_PDB_EXECUTION_ERROR;
+              values[0].data.d_status = GIMP_PDB_EXECUTION_ERROR;
 
-                      values[1].type          = GIMP_PDB_STRING;
-                      values[1].data.d_string = error->message;
-                      return;
-                    }
-                }
-              gimp_drawable_offsets (layer_ID, &x, &y);
-
-              if (! gimp_item_is_text_layer (layer_ID))
-                {
-                  /* For raster layers */
-
-                  GimpRGB layer_color;
-
-                  layer_color = get_layer_color (layer_ID, &single_color);
-
-                  cairo_rectangle (cr, x, y,
-                                   gimp_drawable_width (layer_ID),
-                                   gimp_drawable_height (layer_ID));
-
-                  if (optimize.vectorize && single_color)
-                    {
-                      cairo_set_source_rgba (cr,
-                                             layer_color.r,
-                                             layer_color.g,
-                                             layer_color.b,
-                                             layer_color.a * opacity);
-                      if (mask_ID != -1)
-                        cairo_mask_surface (cr, mask_image, x, y);
-                      else
-                        cairo_fill (cr);
-                    }
-                  else
-                    {
-                      cairo_surface_t *layer_image;
-
-                      layer_image = get_cairo_surface (layer_ID, FALSE,
-                                                       &error);
-                      if (error != NULL)
-                        {
-                          *nreturn_vals = 2;
-
-                          /* free the resources */
-                          cairo_surface_destroy (pdf_file);
-                          cairo_destroy (cr);
-                          fclose (fp);
-
-                          values[0].data.d_status = GIMP_PDB_EXECUTION_ERROR;
-
-                          values[1].type          = GIMP_PDB_STRING;
-                          values[1].data.d_string = error->message;
-                          return;
-                        }
-
-                      cairo_clip (cr);
-
-                      cairo_set_source_surface (cr, layer_image, x, y);
-                      cairo_push_group (cr);
-                      cairo_paint_with_alpha (cr, opacity);
-                      cairo_pop_group_to_source (cr);
-
-                      if (mask_ID != -1)
-                        cairo_mask_surface (cr, mask_image, x, y);
-                      else
-                        cairo_paint (cr);
-
-                      cairo_reset_clip (cr);
-
-                      cairo_surface_destroy (layer_image);
-                    }
-                }
-              else
-                {
-                  /* For text layers */
-                  drawText (layer_ID, opacity, cr, x_res, y_res);
-                }
-              /* draw new page if "layers as pages" option is checked */
-              if (optimize.layers_as_pages &&
-                  g_strcmp0 (name, SAVE2_PROC) == 0)
-                cairo_show_page (cr);
+              values[1].type          = GIMP_PDB_STRING;
+              values[1].data.d_string = error->message;
+              return;
             }
-          /* We are done with the layer - time to free some resources */
-          if (mask_ID != -1)
-            cairo_surface_destroy (mask_image);
         }
+      g_free (layers);
 
       /* We are done with this image - Show it!
        * Unless that's a multi-page to avoid blank page at the end
@@ -938,7 +848,7 @@ gui_single (void)
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (layers_as_pages_c),
                                 optimize.layers_as_pages);
   gtk_frame_set_label_widget (GTK_FRAME (frame), layers_as_pages_c);
-  gimp_image_get_layers (multi_page.images[0], &n_layers);
+  g_free (gimp_image_get_layers (multi_page.images[0], &n_layers));
 
   reverse_order_c = gtk_check_button_new_with_label (_("Reverse the pages order"));
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (reverse_order_c),
@@ -1751,4 +1661,131 @@ drawText (gint32    text_id,
   cairo_font_options_destroy (options);
 
   cairo_restore (cr);
+}
+
+static gboolean
+draw_layer (gint32       *layers,
+            gint          n_layers,
+            gint          j,
+            cairo_t      *cr,
+            gdouble       x_res,
+            gdouble       y_res,
+            const gchar  *name,
+            GError      **error)
+{
+  gint32 layer_ID;
+
+  if (optimize.reverse_order && optimize.layers_as_pages)
+    layer_ID = layers [j];
+  else
+    layer_ID = layers [n_layers - j - 1];
+
+  if (gimp_item_is_group (layer_ID))
+    {
+      gint *children;
+      gint  children_num;
+      gint  i;
+
+      children = gimp_item_get_children (layer_ID, &children_num);
+      for (i = 0; i < children_num; i++)
+        {
+          if (! draw_layer (children, children_num, i,
+                            cr, x_res, y_res, name, error))
+            {
+              g_free (children);
+              return FALSE;
+            }
+        }
+      g_free (children);
+    }
+  else
+    {
+      cairo_surface_t *mask_image = NULL;
+      gint32           mask_ID    = -1;
+      gdouble          opacity;
+
+      opacity = gimp_layer_get_opacity (layer_ID) / 100.0;
+
+      if ((gimp_item_get_visible (layer_ID) && opacity > 0.0) ||
+          ! optimize.ignore_hidden)
+        {
+          gint x, y;
+
+          mask_ID = gimp_layer_get_mask (layer_ID);
+          if (mask_ID != -1)
+            {
+              mask_image = get_cairo_surface (mask_ID, TRUE, error);
+
+              if (*error)
+                return FALSE;
+            }
+          gimp_drawable_offsets (layer_ID, &x, &y);
+
+          if (! gimp_item_is_text_layer (layer_ID))
+            {
+              /* For raster layers */
+
+              GimpRGB  layer_color;
+              gboolean single_color = FALSE;
+
+              layer_color = get_layer_color (layer_ID, &single_color);
+
+              cairo_rectangle (cr, x, y,
+                               gimp_drawable_width (layer_ID),
+                               gimp_drawable_height (layer_ID));
+
+              if (optimize.vectorize && single_color)
+                {
+                  cairo_set_source_rgba (cr,
+                                         layer_color.r,
+                                         layer_color.g,
+                                         layer_color.b,
+                                         layer_color.a * opacity);
+                  if (mask_ID != -1)
+                    cairo_mask_surface (cr, mask_image, x, y);
+                  else
+                    cairo_fill (cr);
+                }
+              else
+                {
+                  cairo_surface_t *layer_image;
+
+                  layer_image = get_cairo_surface (layer_ID, FALSE, error);
+
+                  if (*error)
+                    return FALSE;
+
+                  cairo_clip (cr);
+
+                  cairo_set_source_surface (cr, layer_image, x, y);
+                  cairo_push_group (cr);
+                  cairo_paint_with_alpha (cr, opacity);
+                  cairo_pop_group_to_source (cr);
+
+                  if (mask_ID != -1)
+                    cairo_mask_surface (cr, mask_image, x, y);
+                  else
+                    cairo_paint (cr);
+
+                  cairo_reset_clip (cr);
+
+                  cairo_surface_destroy (layer_image);
+                }
+            }
+          else
+            {
+              /* For text layers */
+              drawText (layer_ID, opacity, cr, x_res, y_res);
+            }
+          /* draw new page if "layers as pages" option is checked */
+          if (optimize.layers_as_pages &&
+              g_strcmp0 (name, SAVE2_PROC) == 0)
+            cairo_show_page (cr);
+        }
+      /* We are done with the layer - time to free some resources */
+      if (mask_ID != -1)
+        cairo_surface_destroy (mask_image);
+    }
+
+  return TRUE;
 }

@@ -30,6 +30,7 @@
 
 #include "pdb/gimpprocedure.h"
 
+#include "widgets/gimpaction.h"
 #include "widgets/gimpactiongroup.h"
 #include "widgets/gimphelp-ids.h"
 #include "widgets/gimpuimanager.h"
@@ -182,6 +183,11 @@ static const GimpStringActionEntry filters_interactive_actions[] =
     NC_("filters-action", "Apply _Lens..."), NULL, NULL,
     "gegl:apply-lens",
     GIMP_HELP_FILTER_APPLY_LENS },
+
+  { "filters-bayer-matrix", GIMP_ICON_GEGL,
+    NC_("filters-action", "_Bayer Matrix..."), NULL, NULL,
+    "gegl:bayer-matrix",
+    GIMP_HELP_FILTER_BAYER_MATRIX },
 
   { "filters-brightness-contrast", GIMP_ICON_TOOL_BRIGHTNESS_CONTRAST,
     NC_("filters-action", "B_rightness-Contrast..."), NULL, NULL,
@@ -412,6 +418,11 @@ static const GimpStringActionEntry filters_interactive_actions[] =
     NC_("filters-action", "_Levels..."), NULL, NULL,
     "gimp:levels",
     GIMP_HELP_TOOL_LEVELS },
+
+  { "filters-linear-sinusoid", GIMP_ICON_TOOL_LEVELS,
+    NC_("filters-action", "_Linear Sinusoid..."), NULL, NULL,
+    "gegl:linear-sinusoid",
+    GIMP_HELP_FILTER_LINEAR_SINUSOID },
 
   { "filters-little-planet", GIMP_ICON_GEGL,
     NC_("filters-action", "_Little Planet..."), NULL, NULL,
@@ -755,28 +766,28 @@ filters_actions_setup (GimpActionGroup *group)
   gimp_action_group_add_string_actions (group, "filters-action",
                                         filters_actions,
                                         G_N_ELEMENTS (filters_actions),
-                                        G_CALLBACK (filters_apply_cmd_callback));
+                                        filters_apply_cmd_callback);
   filters_actions_set_tooltips (group, filters_actions,
                                 G_N_ELEMENTS (filters_actions));
 
   gimp_action_group_add_string_actions (group, "filters-action",
                                         filters_settings_actions,
                                         G_N_ELEMENTS (filters_settings_actions),
-                                        G_CALLBACK (filters_apply_cmd_callback));
+                                        filters_apply_cmd_callback);
   filters_actions_set_tooltips (group, filters_settings_actions,
                                 G_N_ELEMENTS (filters_settings_actions));
 
   gimp_action_group_add_string_actions (group, "filters-action",
                                         filters_interactive_actions,
                                         G_N_ELEMENTS (filters_interactive_actions),
-                                        G_CALLBACK (filters_apply_interactive_cmd_callback));
+                                        filters_apply_interactive_cmd_callback);
   filters_actions_set_tooltips (group, filters_interactive_actions,
                                 G_N_ELEMENTS (filters_interactive_actions));
 
   gimp_action_group_add_enum_actions (group, "filters-action",
                                       filters_repeat_actions,
                                       G_N_ELEMENTS (filters_repeat_actions),
-                                      G_CALLBACK (filters_repeat_cmd_callback));
+                                      filters_repeat_cmd_callback);
 
   n_entries = gimp_filter_history_size (group->gimp);
 
@@ -794,7 +805,7 @@ filters_actions_setup (GimpActionGroup *group)
     }
 
   gimp_action_group_add_procedure_actions (group, entries, n_entries,
-                                           G_CALLBACK (filters_history_cmd_callback));
+                                           filters_history_cmd_callback);
 
   for (i = 0; i < n_entries; i++)
     {
@@ -1058,7 +1069,7 @@ filters_actions_history_changed (Gimp            *gimp,
 
   if (proc)
     {
-      GtkAction   *actual_action = NULL;
+      GimpAction  *actual_action = NULL;
       const gchar *label;
       gchar       *repeat;
       gchar       *reshow;
@@ -1078,8 +1089,8 @@ filters_actions_history_changed (Gimp            *gimp,
       if (g_str_has_prefix (gimp_object_get_name (proc), "filters-"))
         {
           actual_action =
-            gtk_action_group_get_action (GTK_ACTION_GROUP (group),
-                                         gimp_object_get_name (proc));
+            gimp_action_group_get_action (group,
+                                          gimp_object_get_name (proc));
         }
       else if (plug_in_group)
         {
@@ -1090,12 +1101,12 @@ filters_actions_history_changed (Gimp            *gimp,
            *  #517683.
            */
           actual_action =
-            gtk_action_group_get_action (GTK_ACTION_GROUP (plug_in_group),
-                                         gimp_object_get_name (proc));
+            gimp_action_group_get_action (plug_in_group,
+                                          gimp_object_get_name (proc));
         }
 
       if (actual_action)
-        sensitive = gtk_action_get_sensitive (actual_action);
+        sensitive = gimp_action_get_sensitive (actual_action);
 
       gimp_action_group_set_action_sensitive (group, "filters-repeat",
                                               sensitive);
@@ -1115,14 +1126,14 @@ filters_actions_history_changed (Gimp            *gimp,
 
   for (i = 0; i < gimp_filter_history_length (gimp); i++)
     {
-      GtkAction   *action;
-      GtkAction   *actual_action = NULL;
+      GimpAction  *action;
+      GimpAction  *actual_action = NULL;
       const gchar *label;
       gchar       *name;
       gboolean     sensitive = FALSE;
 
       name = g_strdup_printf ("filters-recent-%02d", i + 1);
-      action = gtk_action_group_get_action (GTK_ACTION_GROUP (group), name);
+      action = gimp_action_group_get_action (group, name);
       g_free (name);
 
       proc = gimp_filter_history_nth (gimp, i);
@@ -1132,19 +1143,19 @@ filters_actions_history_changed (Gimp            *gimp,
       if (g_str_has_prefix (gimp_object_get_name (proc), "filters-"))
         {
           actual_action =
-            gtk_action_group_get_action (GTK_ACTION_GROUP (group),
-                                         gimp_object_get_name (proc));
+            gimp_action_group_get_action (group,
+                                          gimp_object_get_name (proc));
         }
       else if (plug_in_group)
         {
           /*  see comment above  */
           actual_action =
-            gtk_action_group_get_action (GTK_ACTION_GROUP (plug_in_group),
-                                         gimp_object_get_name (proc));
+            gimp_action_group_get_action (plug_in_group,
+                                          gimp_object_get_name (proc));
         }
 
       if (actual_action)
-        sensitive = gtk_action_get_sensitive (actual_action);
+        sensitive = gimp_action_get_sensitive (actual_action);
 
       g_object_set (action,
                     "visible",   TRUE,
@@ -1158,10 +1169,10 @@ filters_actions_history_changed (Gimp            *gimp,
 
   for (; i < gimp_filter_history_size (gimp); i++)
     {
-      GtkAction *action;
-      gchar     *name = g_strdup_printf ("filters-recent-%02d", i + 1);
+      GimpAction *action;
+      gchar      *name = g_strdup_printf ("filters-recent-%02d", i + 1);
 
-      action = gtk_action_group_get_action (GTK_ACTION_GROUP (group), name);
+      action = gimp_action_group_get_action (group, name);
       g_free (name);
 
       g_object_set (action,

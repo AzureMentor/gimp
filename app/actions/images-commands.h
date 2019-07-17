@@ -19,12 +19,15 @@
 #define __IMAGES_COMMANDS_H__
 
 
-void   images_raise_views_cmd_callback  (GtkAction *action,
-                                         gpointer   data);
-void   images_new_view_cmd_callback     (GtkAction *action,
-                                         gpointer   data);
-void   images_delete_image_cmd_callback (GtkAction *action,
-                                         gpointer   data);
+void   images_raise_views_cmd_callback  (GimpAction *action,
+                                         GVariant   *value,
+                                         gpointer    data);
+void   images_new_view_cmd_callback     (GimpAction *action,
+                                         GVariant   *value,
+                                         gpointer    data);
+void   images_delete_image_cmd_callback (GimpAction *action,
+                                         GVariant   *value,
+                                         gpointer    data);
 
 
 #endif /* __IMAGES_COMMANDS_H__ */

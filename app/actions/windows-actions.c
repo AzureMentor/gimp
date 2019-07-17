@@ -108,13 +108,13 @@ static const GimpActionEntry windows_actions[] =
   { "windows-show-display-next", NULL,
     NC_("windows-action", "Next Image"), "<alt>Tab",
     NC_("windows-action", "Switch to the next image"),
-    G_CALLBACK (windows_show_display_next_cmd_callback),
+    windows_show_display_next_cmd_callback,
     NULL },
 
   { "windows-show-display-previous", NULL,
     NC_("windows-action", "Previous Image"), "<alt><shift>Tab",
     NC_("windows-action", "Switch to the previous image"),
-    G_CALLBACK (windows_show_display_previous_cmd_callback),
+    windows_show_display_previous_cmd_callback,
     NULL },
 
   { "windows-tab-position",        NULL, NC_("windows-action",
@@ -126,21 +126,21 @@ static const GimpToggleActionEntry windows_toggle_actions[] =
   { "windows-hide-docks", NULL,
     NC_("windows-action", "Hide Docks"), "Tab",
     NC_("windows-action", "When enabled, docks and other dialogs are hidden, leaving only image windows."),
-    G_CALLBACK (windows_hide_docks_cmd_callback),
+    windows_hide_docks_cmd_callback,
     FALSE,
     GIMP_HELP_WINDOWS_HIDE_DOCKS },
 
   { "windows-show-tabs", NULL,
     NC_("windows-action", "Show Tabs"), NULL,
     NC_("windows-action", "When enabled, the image tabs bar is shown."),
-    G_CALLBACK (windows_show_tabs_cmd_callback),
+    windows_show_tabs_cmd_callback,
     FALSE,
     GIMP_HELP_WINDOWS_SHOW_TABS },
 
   { "windows-use-single-window-mode", NULL,
     NC_("windows-action", "Single-Window Mode"), NULL,
     NC_("windows-action", "When enabled, GIMP is in a single-window mode."),
-    G_CALLBACK (windows_use_single_window_mode_cmd_callback),
+    windows_use_single_window_mode_cmd_callback,
     FALSE,
     GIMP_HELP_WINDOWS_USE_SINGLE_WINDOW_MODE }
 };
@@ -185,7 +185,7 @@ windows_actions_setup (GimpActionGroup *group)
                                        windows_tabs_position_actions,
                                        G_N_ELEMENTS (windows_tabs_position_actions),
                                        NULL, 0,
-                                       G_CALLBACK (windows_set_tabs_position_cmd_callback));
+                                       windows_set_tabs_position_cmd_callback);
 
   gimp_action_group_set_action_hide_empty (group, "windows-docks-menu", FALSE);
 
@@ -322,7 +322,7 @@ windows_actions_display_remove (GimpContainer   *container,
                                 GimpActionGroup *group)
 {
   GimpDisplayShell *shell = gimp_display_get_shell (display);
-  GtkAction        *action;
+  GimpAction       *action;
   gchar            *action_name;
 
   if (shell)
@@ -331,13 +331,11 @@ windows_actions_display_remove (GimpContainer   *container,
                                           group);
 
   action_name = gimp_display_get_action_name (display);
-
-  action = gtk_action_group_get_action (GTK_ACTION_GROUP (group), action_name);
+  action = gimp_action_group_get_action (group, action_name);
+  g_free (action_name);
 
   if (action)
-    gimp_action_group_remove_action (group,
-                                     GIMP_ACTION (action));
-  g_free (action_name);
+    gimp_action_group_remove_action_and_accel (group, action);
 
   windows_actions_update_display_accels (group);
 }
@@ -356,14 +354,13 @@ windows_actions_image_notify (GimpDisplay      *display,
                               const GParamSpec *unused,
                               GimpActionGroup  *group)
 {
-  GimpImage *image = gimp_display_get_image (display);
-  GtkAction *action;
-  gchar     *action_name;
+  GimpImage  *image = gimp_display_get_image (display);
+  GimpAction *action;
+  gchar      *action_name;
 
   action_name = gimp_display_get_action_name (display);
 
-  action = gtk_action_group_get_action (GTK_ACTION_GROUP (group),
-                                        action_name);
+  action = gimp_action_group_get_action (group, action_name);
 
   if (! action)
     {
@@ -374,13 +371,12 @@ windows_actions_image_notify (GimpDisplay      *display,
       entry.label       = "";
       entry.accelerator = NULL;
       entry.tooltip     = NULL;
-      entry.callback    = G_CALLBACK (windows_show_display_cmd_callback);
+      entry.callback    = windows_show_display_cmd_callback;
       entry.help_id     = NULL;
 
       gimp_action_group_add_actions (group, NULL, &entry, 1);
 
-      action = gtk_action_group_get_action (GTK_ACTION_GROUP (group),
-                                            action_name);
+      action = gimp_action_group_get_action (group, action_name);
 
       g_object_set_data (G_OBJECT (action), "display", display);
     }
@@ -441,7 +437,7 @@ windows_actions_update_display_accels (GimpActionGroup *group)
        list = g_list_next (list), i++)
     {
       GimpDisplay *display = list->data;
-      GtkAction   *action;
+      GimpAction  *action;
       gchar       *action_name;
 
       if (! gimp_display_get_image (display))
@@ -449,8 +445,7 @@ windows_actions_update_display_accels (GimpActionGroup *group)
 
       action_name = gimp_display_get_action_name (display);
 
-      action = gtk_action_group_get_action (GTK_ACTION_GROUP (group),
-                                            action_name);
+      action = gimp_action_group_get_action (group, action_name);
       g_free (action_name);
 
       if (action)
@@ -458,7 +453,7 @@ windows_actions_update_display_accels (GimpActionGroup *group)
           const gchar *accel_path;
           guint        accel_key;
 
-          accel_path = gtk_action_get_accel_path (action);
+          accel_path = gimp_action_get_accel_path (action);
 
           if (i < 9)
             accel_key = GDK_KEY_1 + i;
@@ -477,7 +472,7 @@ windows_actions_dock_window_added (GimpDialogFactory *factory,
                                    GimpDockWindow    *dock_window,
                                    GimpActionGroup   *group)
 {
-  GtkAction       *action;
+  GimpAction      *action;
   GimpActionEntry  entry;
   gchar           *action_name = windows_actions_dock_window_to_action_name (dock_window);
 
@@ -486,13 +481,12 @@ windows_actions_dock_window_added (GimpDialogFactory *factory,
   entry.label       = "";
   entry.accelerator = NULL;
   entry.tooltip     = NULL;
-  entry.callback    = G_CALLBACK (windows_show_dock_cmd_callback);
+  entry.callback    = windows_show_dock_cmd_callback;
   entry.help_id     = GIMP_HELP_WINDOWS_SHOW_DOCK;
 
   gimp_action_group_add_actions (group, NULL, &entry, 1);
 
-  action = gtk_action_group_get_action (GTK_ACTION_GROUP (group),
-                                        action_name);
+  action = gimp_action_group_get_action (group, action_name);
 
   g_object_set (action,
                 "ellipsize", PANGO_ELLIPSIZE_END,
@@ -515,15 +509,15 @@ windows_actions_dock_window_removed (GimpDialogFactory *factory,
                                      GimpDockWindow    *dock_window,
                                      GimpActionGroup   *group)
 {
-  GtkAction *action;
-  gchar     *action_name = windows_actions_dock_window_to_action_name (dock_window);
+  GimpAction *action;
+  gchar      *action_name;
 
-  action = gtk_action_group_get_action (GTK_ACTION_GROUP (group), action_name);
+  action_name = windows_actions_dock_window_to_action_name (dock_window);
+  action = gimp_action_group_get_action (group, action_name);
+  g_free (action_name);
 
   if (action)
-    gimp_action_group_remove_action (group, GIMP_ACTION (action));
-
-  g_free (action_name);
+    gimp_action_group_remove_action_and_accel (group, action);
 }
 
 static void
@@ -531,11 +525,11 @@ windows_actions_dock_window_notify (GimpDockWindow   *dock_window,
                                     const GParamSpec *pspec,
                                     GimpActionGroup  *group)
 {
-  GtkAction *action;
-  gchar     *action_name;
+  GimpAction *action;
+  gchar      *action_name;
 
   action_name = windows_actions_dock_window_to_action_name (dock_window);
-  action = gtk_action_group_get_action (GTK_ACTION_GROUP (group), action_name);
+  action = gimp_action_group_get_action (group, action_name);
   g_free (action_name);
 
   if (action)
@@ -550,7 +544,7 @@ windows_actions_recent_add (GimpContainer   *container,
                             GimpSessionInfo *info,
                             GimpActionGroup *group)
 {
-  GtkAction       *action;
+  GimpAction      *action;
   GimpActionEntry  entry;
   gint             info_id;
   static gint      info_id_counter = 1;
@@ -574,13 +568,12 @@ windows_actions_recent_add (GimpContainer   *container,
   entry.label       = gimp_object_get_name (info);
   entry.accelerator = NULL;
   entry.tooltip     = gimp_object_get_name (info);
-  entry.callback    = G_CALLBACK (windows_open_recent_cmd_callback);
+  entry.callback    = windows_open_recent_cmd_callback;
   entry.help_id     = GIMP_HELP_WINDOWS_OPEN_RECENT_DOCK;
 
   gimp_action_group_add_actions (group, NULL, &entry, 1);
 
-  action = gtk_action_group_get_action (GTK_ACTION_GROUP (group),
-                                        action_name);
+  action = gimp_action_group_get_action (group, action_name);
 
   g_object_set (action,
                 "ellipsize",       PANGO_ELLIPSIZE_END,
@@ -597,21 +590,19 @@ windows_actions_recent_remove (GimpContainer   *container,
                                GimpSessionInfo *info,
                                GimpActionGroup *group)
 {
-  GtkAction *action;
-  gint       info_id;
-  gchar     *action_name;
+  GimpAction *action;
+  gint        info_id;
+  gchar      *action_name;
 
   info_id = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (info),
                                                 "recent-action-id"));
 
   action_name = g_strdup_printf ("windows-recent-%04d", info_id);
-
-  action = gtk_action_group_get_action (GTK_ACTION_GROUP (group), action_name);
+  action = gimp_action_group_get_action (group, action_name);
+  g_free (action_name);
 
   if (action)
-    gimp_action_group_remove_action (group, GIMP_ACTION (action));
-
-  g_free (action_name);
+    gimp_action_group_remove_action_and_accel (group, action);
 }
 
 static void

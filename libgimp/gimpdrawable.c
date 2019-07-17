@@ -130,7 +130,7 @@ gimp_drawable_flush (GimpDrawable *drawable)
 
       for (i = 0; i < n_tiles; i++)
         if ((tiles[i].ref_count > 0) && tiles[i].dirty)
-          gimp_tile_flush (&tiles[i]);
+          _gimp_tile_flush (&tiles[i]);
     }
 
   if (drawable->shadow_tiles)
@@ -140,7 +140,7 @@ gimp_drawable_flush (GimpDrawable *drawable)
 
       for (i = 0; i < n_tiles; i++)
         if ((tiles[i].ref_count > 0) && tiles[i].dirty)
-          gimp_tile_flush (&tiles[i]);
+          _gimp_tile_flush (&tiles[i]);
     }
 
   /*  nuke all references to this drawable from the cache  */
@@ -210,60 +210,6 @@ gimp_drawable_get_tile (GimpDrawable *drawable,
   tile_num = row * drawable->ntile_cols + col;
 
   return &tiles[tile_num];
-}
-
-GimpTile *
-gimp_drawable_get_tile2 (GimpDrawable *drawable,
-                         gboolean      shadow,
-                         gint          x,
-                         gint          y)
-{
-  gint row;
-  gint col;
-
-  g_return_val_if_fail (drawable != NULL, NULL);
-
-  col = x / TILE_WIDTH;
-  row = y / TILE_HEIGHT;
-
-  return gimp_drawable_get_tile (drawable, shadow, row, col);
-}
-
-void
-gimp_drawable_get_color_uchar (gint32         drawable_ID,
-                               const GimpRGB *color,
-                               guchar        *color_uchar)
-{
-  g_return_if_fail (color != NULL);
-  g_return_if_fail (color_uchar != NULL);
-
-  switch (gimp_drawable_type (drawable_ID))
-    {
-    case GIMP_RGB_IMAGE:
-      gimp_rgb_get_uchar (color,
-                          &color_uchar[0], &color_uchar[1], &color_uchar[2]);
-      color_uchar[3] = 255;
-      break;
-
-    case GIMP_RGBA_IMAGE:
-      gimp_rgba_get_uchar (color,
-                           &color_uchar[0], &color_uchar[1], &color_uchar[2],
-                           &color_uchar[3]);
-      break;
-
-    case GIMP_GRAY_IMAGE:
-      color_uchar[0] = gimp_rgb_luminance_uchar (color);
-      color_uchar[1] = 255;
-      break;
-
-    case GIMP_GRAYA_IMAGE:
-      color_uchar[0] = gimp_rgb_luminance_uchar (color);
-      gimp_rgba_get_uchar (color, NULL, NULL, NULL, &color_uchar[1]);
-      break;
-
-    default:
-      break;
-    }
 }
 
 guchar *
@@ -488,6 +434,27 @@ gimp_drawable_get_format (gint32 drawable_ID)
 
       g_free (format_str);
     }
+
+  return format;
+}
+/**
+ * gimp_drawable_get_thumbnail_format:
+ * @drawable_ID: the ID of the #GimpDrawable to get the thumbnail format for.
+ *
+ * Returns the #Babl thumbnail format of the drawable.
+ *
+ * Return value: The #Babl thumbnail format.
+ *
+ * Since: 2.10.14
+ */
+const Babl *
+gimp_drawable_get_thumbnail_format (gint32 drawable_ID)
+{
+  const Babl *format     = NULL;
+  gchar      *format_str = _gimp_drawable_get_thumbnail_format (drawable_ID);
+
+  if (format_str)
+    format = babl_format (format_str);
 
   return format;
 }

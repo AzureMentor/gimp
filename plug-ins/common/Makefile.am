@@ -49,17 +49,12 @@ AM_CPPFLAGS = \
 align_layers_libexecdir = $(gimpplugindir)/plug-ins/align-layers
 animation_optimize_libexecdir = $(gimpplugindir)/plug-ins/animation-optimize
 blinds_libexecdir = $(gimpplugindir)/plug-ins/blinds
-blur_libexecdir = $(gimpplugindir)/plug-ins/blur
 border_average_libexecdir = $(gimpplugindir)/plug-ins/border-average
 busy_dialog_libexecdir = $(gimpplugindir)/plug-ins/busy-dialog
-cartoon_libexecdir = $(gimpplugindir)/plug-ins/cartoon
 checkerboard_libexecdir = $(gimpplugindir)/plug-ins/checkerboard
 cml_explorer_libexecdir = $(gimpplugindir)/plug-ins/cml-explorer
-color_cube_analyze_libexecdir = $(gimpplugindir)/plug-ins/color-cube-analyze
-colorify_libexecdir = $(gimpplugindir)/plug-ins/colorify
 colormap_remap_libexecdir = $(gimpplugindir)/plug-ins/colormap-remap
 compose_libexecdir = $(gimpplugindir)/plug-ins/compose
-contrast_normalize_libexecdir = $(gimpplugindir)/plug-ins/contrast-normalize
 contrast_retinex_libexecdir = $(gimpplugindir)/plug-ins/contrast-retinex
 crop_zealous_libexecdir = $(gimpplugindir)/plug-ins/crop-zealous
 curve_bend_libexecdir = $(gimpplugindir)/plug-ins/curve-bend
@@ -67,8 +62,6 @@ decompose_libexecdir = $(gimpplugindir)/plug-ins/decompose
 depth_merge_libexecdir = $(gimpplugindir)/plug-ins/depth-merge
 despeckle_libexecdir = $(gimpplugindir)/plug-ins/despeckle
 destripe_libexecdir = $(gimpplugindir)/plug-ins/destripe
-edge_dog_libexecdir = $(gimpplugindir)/plug-ins/edge-dog
-edge_neon_libexecdir = $(gimpplugindir)/plug-ins/edge-neon
 emboss_libexecdir = $(gimpplugindir)/plug-ins/emboss
 file_aa_libexecdir = $(gimpplugindir)/plug-ins/file-aa
 file_cel_libexecdir = $(gimpplugindir)/plug-ins/file-cel
@@ -114,18 +107,14 @@ guillotine_libexecdir = $(gimpplugindir)/plug-ins/guillotine
 hot_libexecdir = $(gimpplugindir)/plug-ins/hot
 jigsaw_libexecdir = $(gimpplugindir)/plug-ins/jigsaw
 mail_libexecdir = $(gimpplugindir)/plug-ins/mail
-max_rgb_libexecdir = $(gimpplugindir)/plug-ins/max-rgb
 newsprint_libexecdir = $(gimpplugindir)/plug-ins/newsprint
 nl_filter_libexecdir = $(gimpplugindir)/plug-ins/nl-filter
 oilify_libexecdir = $(gimpplugindir)/plug-ins/oilify
-photocopy_libexecdir = $(gimpplugindir)/plug-ins/photocopy
 plugin_browser_libexecdir = $(gimpplugindir)/plug-ins/plugin-browser
 procedure_browser_libexecdir = $(gimpplugindir)/plug-ins/procedure-browser
 qbist_libexecdir = $(gimpplugindir)/plug-ins/qbist
 sample_colorize_libexecdir = $(gimpplugindir)/plug-ins/sample-colorize
-sharpen_libexecdir = $(gimpplugindir)/plug-ins/sharpen
 smooth_palette_libexecdir = $(gimpplugindir)/plug-ins/smooth-palette
-softglow_libexecdir = $(gimpplugindir)/plug-ins/softglow
 sparkle_libexecdir = $(gimpplugindir)/plug-ins/sparkle
 sphere_designer_libexecdir = $(gimpplugindir)/plug-ins/sphere-designer
 tile_libexecdir = $(gimpplugindir)/plug-ins/tile
@@ -141,17 +130,12 @@ web_page_libexecdir = $(gimpplugindir)/plug-ins/web-page
 align_layers_libexec_PROGRAMS = align-layers
 animation_optimize_libexec_PROGRAMS = animation-optimize
 blinds_libexec_PROGRAMS = blinds
-blur_libexec_PROGRAMS = blur
 border_average_libexec_PROGRAMS = border-average
 busy_dialog_libexec_PROGRAMS = busy-dialog
-cartoon_libexec_PROGRAMS = cartoon
 checkerboard_libexec_PROGRAMS = checkerboard
 cml_explorer_libexec_PROGRAMS = cml-explorer
-color_cube_analyze_libexec_PROGRAMS = color-cube-analyze
-colorify_libexec_PROGRAMS = colorify
 colormap_remap_libexec_PROGRAMS = colormap-remap
 compose_libexec_PROGRAMS = compose
-contrast_normalize_libexec_PROGRAMS = contrast-normalize
 contrast_retinex_libexec_PROGRAMS = contrast-retinex
 crop_zealous_libexec_PROGRAMS = crop-zealous
 curve_bend_libexec_PROGRAMS = curve-bend
@@ -159,8 +143,6 @@ decompose_libexec_PROGRAMS = decompose
 depth_merge_libexec_PROGRAMS = depth-merge
 despeckle_libexec_PROGRAMS = despeckle
 destripe_libexec_PROGRAMS = destripe
-edge_dog_libexec_PROGRAMS = edge-dog
-edge_neon_libexec_PROGRAMS = edge-neon
 emboss_libexec_PROGRAMS = emboss
 file_aa_libexec_PROGRAMS = $(FILE_AA)
 file_cel_libexec_PROGRAMS = file-cel
@@ -206,18 +188,14 @@ guillotine_libexec_PROGRAMS = guillotine
 hot_libexec_PROGRAMS = hot
 jigsaw_libexec_PROGRAMS = jigsaw
 mail_libexec_PROGRAMS = $(MAIL)
-max_rgb_libexec_PROGRAMS = max-rgb
 newsprint_libexec_PROGRAMS = newsprint
 nl_filter_libexec_PROGRAMS = nl-filter
 oilify_libexec_PROGRAMS = oilify
-photocopy_libexec_PROGRAMS = photocopy
 plugin_browser_libexec_PROGRAMS = plugin-browser
 procedure_browser_libexec_PROGRAMS = procedure-browser
 qbist_libexec_PROGRAMS = qbist
 sample_colorize_libexec_PROGRAMS = sample-colorize
-sharpen_libexec_PROGRAMS = sharpen
 smooth_palette_libexec_PROGRAMS = smooth-palette
-softglow_libexec_PROGRAMS = softglow
 sparkle_libexec_PROGRAMS = sparkle
 sphere_designer_libexec_PROGRAMS = sphere-designer
 tile_libexec_PROGRAMS = tile
@@ -283,6 +261,7 @@ animation_optimize_LDADD = \
 	$(libgimpbase)		\
 	$(CAIRO_LIBS)		\
 	$(GDK_PIXBUF_LIBS)	\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(animation_optimize_RC)
@@ -300,24 +279,10 @@ blinds_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(blinds_RC)
-
-blur_SOURCES = \
-	blur.c
-
-blur_LDADD = \
-	$(libgimp)		\
-	$(libgimpmath)		\
-	$(libgimpconfig)	\
-	$(libgimpcolor)		\
-	$(libgimpbase)		\
-	$(CAIRO_LIBS)		\
-	$(GDK_PIXBUF_LIBS)	\
-	$(RT_LIBS)		\
-	$(INTLLIBS)		\
-	$(blur_RC)
 
 border_average_SOURCES = \
 	border-average.c
@@ -355,23 +320,6 @@ busy_dialog_LDADD = \
 	$(INTLLIBS)		\
 	$(busy_dialog_RC)
 
-cartoon_SOURCES = \
-	cartoon.c
-
-cartoon_LDADD = \
-	$(libgimpui)		\
-	$(libgimpwidgets)	\
-	$(libgimpmodule)	\
-	$(libgimp)		\
-	$(libgimpmath)		\
-	$(libgimpconfig)	\
-	$(libgimpcolor)		\
-	$(libgimpbase)		\
-	$(GTK_LIBS)		\
-	$(RT_LIBS)		\
-	$(INTLLIBS)		\
-	$(cartoon_RC)
-
 checkerboard_SOURCES = \
 	checkerboard.c
 
@@ -385,6 +333,7 @@ checkerboard_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(checkerboard_RC)
@@ -402,43 +351,10 @@ cml_explorer_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(cml_explorer_RC)
-
-color_cube_analyze_SOURCES = \
-	color-cube-analyze.c
-
-color_cube_analyze_LDADD = \
-	$(libgimpui)		\
-	$(libgimpwidgets)	\
-	$(libgimpmodule)	\
-	$(libgimp)		\
-	$(libgimpmath)		\
-	$(libgimpconfig)	\
-	$(libgimpcolor)		\
-	$(libgimpbase)		\
-	$(GTK_LIBS)		\
-	$(RT_LIBS)		\
-	$(INTLLIBS)		\
-	$(color_cube_analyze_RC)
-
-colorify_SOURCES = \
-	colorify.c
-
-colorify_LDADD = \
-	$(libgimpui)		\
-	$(libgimpwidgets)	\
-	$(libgimpmodule)	\
-	$(libgimp)		\
-	$(libgimpmath)		\
-	$(libgimpconfig)	\
-	$(libgimpcolor)		\
-	$(libgimpbase)		\
-	$(GTK_LIBS)		\
-	$(RT_LIBS)		\
-	$(INTLLIBS)		\
-	$(colorify_RC)
 
 colormap_remap_SOURCES = \
 	colormap-remap.c
@@ -476,21 +392,6 @@ compose_LDADD = \
 	$(INTLLIBS)		\
 	$(compose_RC)
 
-contrast_normalize_SOURCES = \
-	contrast-normalize.c
-
-contrast_normalize_LDADD = \
-	$(libgimp)		\
-	$(libgimpmath)		\
-	$(libgimpconfig)	\
-	$(libgimpcolor)		\
-	$(libgimpbase)		\
-	$(CAIRO_LIBS)		\
-	$(GDK_PIXBUF_LIBS)	\
-	$(RT_LIBS)		\
-	$(INTLLIBS)		\
-	$(contrast_normalize_RC)
-
 contrast_retinex_SOURCES = \
 	contrast-retinex.c
 
@@ -504,6 +405,7 @@ contrast_retinex_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(contrast_retinex_RC)
@@ -537,6 +439,7 @@ curve_bend_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(curve_bend_RC)
@@ -589,6 +492,7 @@ despeckle_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(despeckle_RC)
@@ -606,43 +510,10 @@ destripe_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(destripe_RC)
-
-edge_dog_SOURCES = \
-	edge-dog.c
-
-edge_dog_LDADD = \
-	$(libgimpui)		\
-	$(libgimpwidgets)	\
-	$(libgimpmodule)	\
-	$(libgimp)		\
-	$(libgimpmath)		\
-	$(libgimpconfig)	\
-	$(libgimpcolor)		\
-	$(libgimpbase)		\
-	$(GTK_LIBS)		\
-	$(RT_LIBS)		\
-	$(INTLLIBS)		\
-	$(edge_dog_RC)
-
-edge_neon_SOURCES = \
-	edge-neon.c
-
-edge_neon_LDADD = \
-	$(libgimpui)		\
-	$(libgimpwidgets)	\
-	$(libgimpmodule)	\
-	$(libgimp)		\
-	$(libgimpmath)		\
-	$(libgimpconfig)	\
-	$(libgimpcolor)		\
-	$(libgimpbase)		\
-	$(GTK_LIBS)		\
-	$(RT_LIBS)		\
-	$(INTLLIBS)		\
-	$(edge_neon_RC)
 
 emboss_SOURCES = \
 	emboss.c
@@ -1328,6 +1199,7 @@ film_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(film_RC)
@@ -1394,6 +1266,7 @@ grid_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(grid_RC)
@@ -1426,6 +1299,7 @@ hot_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(hot_RC)
@@ -1443,6 +1317,7 @@ jigsaw_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(jigsaw_RC)
@@ -1463,23 +1338,6 @@ mail_LDADD = \
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(mail_RC)
-
-max_rgb_SOURCES = \
-	max-rgb.c
-
-max_rgb_LDADD = \
-	$(libgimpui)		\
-	$(libgimpwidgets)	\
-	$(libgimpmodule)	\
-	$(libgimp)		\
-	$(libgimpmath)		\
-	$(libgimpconfig)	\
-	$(libgimpcolor)		\
-	$(libgimpbase)		\
-	$(GTK_LIBS)		\
-	$(RT_LIBS)		\
-	$(INTLLIBS)		\
-	$(max_rgb_RC)
 
 newsprint_SOURCES = \
 	newsprint.c
@@ -1511,6 +1369,7 @@ nl_filter_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(nl_filter_RC)
@@ -1531,23 +1390,6 @@ oilify_LDADD = \
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(oilify_RC)
-
-photocopy_SOURCES = \
-	photocopy.c
-
-photocopy_LDADD = \
-	$(libgimpui)		\
-	$(libgimpwidgets)	\
-	$(libgimpmodule)	\
-	$(libgimp)		\
-	$(libgimpmath)		\
-	$(libgimpconfig)	\
-	$(libgimpcolor)		\
-	$(libgimpbase)		\
-	$(GTK_LIBS)		\
-	$(RT_LIBS)		\
-	$(INTLLIBS)		\
-	$(photocopy_RC)
 
 plugin_browser_SOURCES = \
 	plugin-browser.c
@@ -1614,26 +1456,10 @@ sample_colorize_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(sample_colorize_RC)
-
-sharpen_SOURCES = \
-	sharpen.c
-
-sharpen_LDADD = \
-	$(libgimpui)		\
-	$(libgimpwidgets)	\
-	$(libgimpmodule)	\
-	$(libgimp)		\
-	$(libgimpmath)		\
-	$(libgimpconfig)	\
-	$(libgimpcolor)		\
-	$(libgimpbase)		\
-	$(GTK_LIBS)		\
-	$(RT_LIBS)		\
-	$(INTLLIBS)		\
-	$(sharpen_RC)
 
 smooth_palette_SOURCES = \
 	smooth-palette.c
@@ -1653,23 +1479,6 @@ smooth_palette_LDADD = \
 	$(INTLLIBS)		\
 	$(smooth_palette_RC)
 
-softglow_SOURCES = \
-	softglow.c
-
-softglow_LDADD = \
-	$(libgimpui)		\
-	$(libgimpwidgets)	\
-	$(libgimpmodule)	\
-	$(libgimp)		\
-	$(libgimpmath)		\
-	$(libgimpconfig)	\
-	$(libgimpcolor)		\
-	$(libgimpbase)		\
-	$(GTK_LIBS)		\
-	$(RT_LIBS)		\
-	$(INTLLIBS)		\
-	$(softglow_RC)
-
 sparkle_SOURCES = \
 	sparkle.c
 
@@ -1683,6 +1492,7 @@ sparkle_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(sparkle_RC)
@@ -1700,6 +1510,7 @@ sphere_designer_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(sphere_designer_RC)
@@ -1735,6 +1546,7 @@ tile_small_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(tile_small_RC)
@@ -1769,6 +1581,7 @@ van_gogh_lic_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(van_gogh_lic_RC)

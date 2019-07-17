@@ -46,8 +46,9 @@
 /*  public functions  */
 
 void
-drawable_equalize_cmd_callback (GtkAction *action,
-                                gpointer   data)
+drawable_equalize_cmd_callback (GimpAction *action,
+                                GVariant   *value,
+                                gpointer    data)
 {
   GimpImage    *image;
   GimpDrawable *drawable;
@@ -58,8 +59,9 @@ drawable_equalize_cmd_callback (GtkAction *action,
 }
 
 void
-drawable_levels_stretch_cmd_callback (GtkAction *action,
-                                      gpointer   data)
+drawable_levels_stretch_cmd_callback (GimpAction *action,
+                                      GVariant   *value,
+                                      gpointer    data)
 {
   GimpImage    *image;
   GimpDrawable *drawable;
@@ -83,15 +85,16 @@ drawable_levels_stretch_cmd_callback (GtkAction *action,
 }
 
 void
-drawable_linked_cmd_callback (GtkAction *action,
-                              gpointer   data)
+drawable_linked_cmd_callback (GimpAction *action,
+                              GVariant   *value,
+                              gpointer    data)
 {
   GimpImage    *image;
   GimpDrawable *drawable;
   gboolean      linked;
   return_if_no_drawable (image, drawable, data);
 
-  linked = gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action));
+  linked = g_variant_get_boolean (value);
 
   if (GIMP_IS_LAYER_MASK (drawable))
     drawable =
@@ -114,15 +117,16 @@ drawable_linked_cmd_callback (GtkAction *action,
 }
 
 void
-drawable_visible_cmd_callback (GtkAction *action,
-                               gpointer   data)
+drawable_visible_cmd_callback (GimpAction *action,
+                               GVariant   *value,
+                               gpointer    data)
 {
   GimpImage    *image;
   GimpDrawable *drawable;
   gboolean      visible;
   return_if_no_drawable (image, drawable, data);
 
-  visible = gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action));
+  visible = g_variant_get_boolean (value);
 
   if (GIMP_IS_LAYER_MASK (drawable))
     drawable =
@@ -145,15 +149,16 @@ drawable_visible_cmd_callback (GtkAction *action,
 }
 
 void
-drawable_lock_content_cmd_callback (GtkAction *action,
-                                    gpointer   data)
+drawable_lock_content_cmd_callback (GimpAction *action,
+                                    GVariant   *value,
+                                    gpointer    data)
 {
   GimpImage    *image;
   GimpDrawable *drawable;
   gboolean      locked;
   return_if_no_drawable (image, drawable, data);
 
-  locked = gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action));
+  locked = g_variant_get_boolean (value);
 
   if (GIMP_IS_LAYER_MASK (drawable))
     drawable =
@@ -180,15 +185,16 @@ drawable_lock_content_cmd_callback (GtkAction *action,
 }
 
 void
-drawable_lock_position_cmd_callback (GtkAction *action,
-                                    gpointer   data)
+drawable_lock_position_cmd_callback (GimpAction *action,
+                                     GVariant   *value,
+                                     gpointer    data)
 {
   GimpImage    *image;
   GimpDrawable *drawable;
   gboolean      locked;
   return_if_no_drawable (image, drawable, data);
 
-  locked = gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action));
+  locked = g_variant_get_boolean (value);
 
   if (GIMP_IS_LAYER_MASK (drawable))
     drawable =
@@ -211,24 +217,27 @@ drawable_lock_position_cmd_callback (GtkAction *action,
 }
 
 void
-drawable_flip_cmd_callback (GtkAction *action,
-                            gint       value,
-                            gpointer   data)
+drawable_flip_cmd_callback (GimpAction *action,
+                            GVariant   *value,
+                            gpointer    data)
 {
-  GimpImage    *image;
-  GimpDrawable *drawable;
-  GimpItem     *item;
-  GimpContext  *context;
-  gint          off_x, off_y;
-  gdouble       axis = 0.0;
+  GimpImage           *image;
+  GimpDrawable        *drawable;
+  GimpItem            *item;
+  GimpContext         *context;
+  gint                 off_x, off_y;
+  gdouble              axis = 0.0;
+  GimpOrientationType  orientation;
   return_if_no_drawable (image, drawable, data);
   return_if_no_context (context, data);
+
+  orientation = (GimpOrientationType) g_variant_get_int32 (value);
 
   item = GIMP_ITEM (drawable);
 
   gimp_item_get_offset (item, &off_x, &off_y);
 
-  switch ((GimpOrientationType) value)
+  switch (orientation)
     {
     case GIMP_ORIENTATION_HORIZONTAL:
       axis = ((gdouble) off_x + (gdouble) gimp_item_get_width (item) / 2.0);
@@ -244,32 +253,33 @@ drawable_flip_cmd_callback (GtkAction *action,
 
   if (gimp_item_get_linked (item))
     {
-      gimp_item_linked_flip (item, context,
-                             (GimpOrientationType) value, axis, FALSE);
+      gimp_item_linked_flip (item, context, orientation, axis, FALSE);
     }
   else
     {
-      gimp_item_flip (item, context,
-                      (GimpOrientationType) value, axis, FALSE);
+      gimp_item_flip (item, context, orientation, axis, FALSE);
     }
 
   gimp_image_flush (image);
 }
 
 void
-drawable_rotate_cmd_callback (GtkAction *action,
-                              gint       value,
-                              gpointer   data)
+drawable_rotate_cmd_callback (GimpAction *action,
+                              GVariant   *value,
+                              gpointer    data)
 {
-  GimpImage    *image;
-  GimpDrawable *drawable;
-  GimpContext  *context;
-  GimpItem     *item;
-  gint          off_x, off_y;
-  gdouble       center_x, center_y;
-  gboolean      clip_result = FALSE;
+  GimpImage        *image;
+  GimpDrawable     *drawable;
+  GimpContext      *context;
+  GimpItem         *item;
+  gint              off_x, off_y;
+  gdouble           center_x, center_y;
+  gboolean          clip_result = FALSE;
+  GimpRotationType  rotation_type;
   return_if_no_drawable (image, drawable, data);
   return_if_no_context (context, data);
+
+  rotation_type = (GimpRotationType) g_variant_get_int32 (value);
 
   item = GIMP_ITEM (drawable);
 
@@ -283,12 +293,12 @@ drawable_rotate_cmd_callback (GtkAction *action,
 
   if (gimp_item_get_linked (item))
     {
-      gimp_item_linked_rotate (item, context, (GimpRotationType) value,
+      gimp_item_linked_rotate (item, context, rotation_type,
                                center_x, center_y, FALSE);
     }
   else
     {
-      gimp_item_rotate (item, context, (GimpRotationType) value,
+      gimp_item_rotate (item, context, rotation_type,
                         center_x, center_y, clip_result);
     }
 

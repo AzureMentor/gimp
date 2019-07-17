@@ -51,6 +51,7 @@ GtkRadioAction * gimp_radio_action_new      (const gchar *name,
                                              const gchar *label,
                                              const gchar *tooltip,
                                              const gchar *icon_name,
+                                             const gchar *help_id,
                                              gint         value);
 
 

@@ -205,7 +205,6 @@ EXPORTS
 	gimp_drawable_free_shadow
 	gimp_drawable_get
 	gimp_drawable_get_buffer
-	gimp_drawable_get_color_uchar
 	gimp_drawable_get_format
 	gimp_drawable_get_pixel
 	gimp_drawable_get_shadow_buffer
@@ -213,8 +212,8 @@ EXPORTS
 	gimp_drawable_get_sub_thumbnail_data
 	gimp_drawable_get_thumbnail
 	gimp_drawable_get_thumbnail_data
+	gimp_drawable_get_thumbnail_format
 	gimp_drawable_get_tile
-	gimp_drawable_get_tile2
 	gimp_drawable_has_alpha
 	gimp_drawable_height
 	gimp_drawable_histogram
@@ -590,11 +589,6 @@ EXPORTS
 	gimp_patterns_refresh
 	gimp_patterns_set_popup
 	gimp_pencil
-	gimp_pixel_fetcher_destroy
-	gimp_pixel_fetcher_get_pixel
-	gimp_pixel_fetcher_new
-	gimp_pixel_fetcher_put_pixel
-	gimp_pixel_fetcher_set_edge_mode
 	gimp_pixel_rgn_get_col
 	gimp_pixel_rgn_get_pixel
 	gimp_pixel_rgn_get_rect
@@ -647,11 +641,6 @@ EXPORTS
 	gimp_register_magic_load_handler
 	gimp_register_save_handler
 	gimp_register_thumbnail_loader
-	gimp_rgn_iterate1
-	gimp_rgn_iterate2
-	gimp_rgn_iterator_dest
-	gimp_rgn_iterator_free
-	gimp_rgn_iterator_new
 	gimp_run_procedure
 	gimp_run_procedure2
 	gimp_selection_all
@@ -707,7 +696,6 @@ EXPORTS
 	gimp_text_layer_set_line_spacing
 	gimp_text_layer_set_text
 	gimp_tile_cache_ntiles
-	gimp_tile_flush
 	gimp_tile_height
 	gimp_tile_ref
 	gimp_tile_unref

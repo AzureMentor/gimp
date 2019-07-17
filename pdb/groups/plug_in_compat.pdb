@@ -608,6 +608,72 @@ CODE
     );
 }
 
+sub plug_in_cartoon {
+    $blurb = 'Simulate a cartoon by enhancing edges';
+
+    $help = <<'HELP';
+Propagates dark values in an image based on each pixel's relative
+darkness to a neighboring average. The idea behind this filter is to
+give the look of a black felt pen drawing subsequently shaded with
+color. This is achieved by darkening areas of the image which are
+measured to be darker than a neighborhood average. In this way,
+sufficiently large shifts in intensity are darkened to black. The rate
+at which they are darkened to black is determined by the second
+pct_black parameter. The mask_radius parameter controls the size of
+the pixel neighborhood over which the average intensity is computed
+and then compared to each pixel in the neighborhood to decide whether
+or not to darken it to black. Large values for mask_radius result in
+very thick black areas bordering the shaded regions of color and much
+less detail for black areas everywhere including inside regions of
+color. Small values result in more subtle pen strokes and detail
+everywhere. Small values for the pct_black make the blend from the
+color regions to the black border lines smoother and the lines
+themselves thinner and less noticeable; larger values achieve the
+opposite effect.
+HELP
+
+    &std_pdb_compat('gegl:cartoon');
+    $date = '2019';
+
+    @inargs = (
+	{ name => 'run_mode', type => 'enum GimpRunMode', dead => 1,
+	  desc => 'The run mode' },
+	{ name => 'image', type => 'image', dead => 1,
+	  desc => 'Input image (unused)' },
+	{ name => 'drawable', type => 'drawable',
+	  desc => 'Input drawable' },
+	{ name => 'mask_radius', type => '1.0 <= float <= 50.0',
+	  desc => 'Cartoon mask radius (radius of pixel neighborhood)' },
+	{ name => 'pct_black', type => '0.0 <= float <= 1.0',
+	  desc => 'Percentage of darkened pixels to set to black' },
+    );
+
+    %invoke = (
+	code => <<'CODE'
+{
+  if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                 GIMP_PDB_ITEM_CONTENT, error) &&
+      gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+    {
+      GeglNode *node =
+        gegl_node_new_child (NULL,
+                             "operation",   "gegl:cartoon",
+			     "mask-radius", mask_radius,
+			     "pct-black",   pct_black,
+                             NULL);
+
+      gimp_drawable_apply_operation (drawable, progress,
+                                     C_("undo-type", "Cartoon"),
+                                     node);
+      g_object_unref (node);
+    }
+  else
+    success = FALSE;
+}
+CODE
+    );
+}
+
 sub plug_in_colors_channel_mixer {
     $blurb = 'Alter colors by mixing RGB Channels';
 
@@ -1184,6 +1250,90 @@ HELP
                       1,
                       progress,
                       error);
+}
+CODE
+    );
+}
+
+sub plug_in_dog {
+    $blurb = 'Edge detection with control of edge thickness';
+
+    $help = <<'HELP';
+Applies two Gaussian blurs to the drawable, and subtracts the results.
+This is robust and widely used method for detecting edges.
+HELP
+
+    &std_pdb_compat('gegl:difference-of-gaussians');
+    $date = '2015';
+
+    @inargs = (
+        { name => 'run_mode', type => 'enum GimpRunMode', dead => 1,
+          desc => 'The run mode' },
+        { name => 'image', type => 'image',
+          desc => 'Input image (unused)' },
+        { name => 'drawable', type => 'drawable',
+          desc => 'Input drawable' },
+        { name => 'inner', type => '0.0 <= float <= 10.0',
+          desc => 'Radius of inner gaussian blur in pixels' },
+        { name => 'outer', type => '0.0 <= float <= 10.0',
+          desc => 'Radius of outer gaussian blur in pixels' },
+        { name => 'normalize', type => 'boolean',
+          desc => 'Normalize' },
+        { name => 'invert', type => 'boolean',
+          desc => 'Invert' }
+    );
+
+    %invoke = (
+        code => <<'CODE'
+{
+  if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                 GIMP_PDB_ITEM_CONTENT, error) &&
+      gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+    {
+      GeglNode *node;
+
+      if (normalize || invert)
+        gimp_image_undo_group_start (image, GIMP_UNDO_GROUP_MISC,
+                                     C_("undo-type", "DoG Edge Detect"));
+
+      node = gegl_node_new_child (NULL,
+                                  "operation", "gegl:difference-of-gaussians",
+                                  "radius1",   inner * 0.32,
+                                  "radius2",   outer * 0.32,
+                                  NULL);
+
+      node = wrap_in_gamma_cast (node, drawable);
+
+      gimp_drawable_apply_operation (drawable, progress,
+                                     C_("undo-type", "DoG Edge Detect"),
+                                     node);
+      g_object_unref (node);
+
+      if (normalize)
+        {
+          node = gegl_node_new_child (NULL,
+                                      "operation",   "gegl:stretch-contrast",
+                                      "keep-colors", TRUE,
+                                      "perceptual",  TRUE,
+                                      NULL);
+
+          gimp_drawable_apply_operation (drawable, progress,
+                                         C_("undo-type", "Normalize"),
+                                         node);
+          g_object_unref (node);
+        }
+
+      if (invert)
+        gimp_drawable_apply_operation_by_name (drawable, progress,
+                                               C_("undo-type", "Invert"),
+                                               "gegl:invert-gamma",
+                                               NULL);
+
+      if (normalize || invert)
+        gimp_image_undo_group_end (image);
+    }
+  else
+    success = FALSE;
 }
 CODE
     );
@@ -2416,6 +2566,111 @@ CODE
     );
 }
 
+sub plug_in_neon {
+    $blurb = 'Simulate the glowing boundary of a neon light';
+
+    $help = <<'HELP';
+This filter works in a manner similar to the edge plug-in, but uses
+the first derivative of the gaussian operator to achieve resolution
+independence. The IIR method of calculating the effect is utilized to
+keep the processing time constant between large and small standard
+deviations.
+HELP
+
+    &std_pdb_compat('gegl:edge-neon');
+    $date = '2019';
+
+    @inargs = (
+        { name => 'run_mode', type => 'enum GimpRunMode', dead => 1,
+          desc => 'The run mode' },
+        { name => 'image', type => 'image', dead => 1,
+          desc => 'Input image (unused)' },
+        { name => 'drawable', type => 'drawable',
+          desc => 'Input drawable' },
+        { name => 'radius', type => '0.0 <= float <= 1500.0',
+          desc => 'Radius of neon effect (in pixels)' },
+        { name => 'amount', type => '0.0 <= float <= 100.0',
+          desc => 'Effect enhancement variable' }
+    );
+
+    %invoke = (
+        code => <<'CODE'
+{
+  if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                 GIMP_PDB_ITEM_CONTENT, error) &&
+      gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+    {
+      GeglNode *node;
+
+      node = gegl_node_new_child (NULL,
+                                  "operation", "gegl:edge-neon",
+                                  "radius",    radius,
+                                  "amount",    amount,
+                                  NULL);
+
+      gimp_drawable_apply_operation (drawable, progress,
+                                     C_("undo-type", "Neon"),
+                                     node);
+      g_object_unref (node);
+    }
+  else
+    success = FALSE;
+}
+CODE
+    );
+}
+
+sub plug_in_normalize {
+    $blurb = 'Stretch brightness values to cover the full range';
+
+    $help = <<'HELP';
+This plug-in performs almost the same operation as the 'contrast
+autostretch' plug-in, except that it won't allow the color channels to
+normalize independently.  This is actually what most people probably
+want instead of contrast-autostretch; use c-a only if you wish to
+remove an undesirable color-tint from a source image which is supposed
+to contain pure-white and pure-black.
+HELP
+
+    &std_pdb_compat('gegl:stretch-contrast');
+    $date = '2019';
+
+    @inargs = (
+        { name => 'run_mode', type => 'enum GimpRunMode', dead => 1,
+          desc => 'The run mode' },
+        { name => 'image', type => 'image', dead => 1,
+          desc => 'Input image (unused)' },
+        { name => 'drawable', type => 'drawable',
+          desc => 'Input drawable' }
+    );
+
+    %invoke = (
+        code => <<'CODE'
+{
+  if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                 GIMP_PDB_ITEM_CONTENT, error) &&
+      gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+    {
+      GeglNode *node;
+
+      node = gegl_node_new_child (NULL,
+                                  "operation",   "gegl:stretch-contrast",
+                                  "keep-colors", TRUE,
+                                  "perceptual",  TRUE,
+                                  NULL);
+
+      gimp_drawable_apply_operation (drawable, progress,
+                                     C_("undo-type", "Normalize"),
+                                     node);
+      g_object_unref (node);
+    }
+  else
+    success = FALSE;
+}
+CODE
+    );
+}
+
 sub plug_in_nova {
     $blurb = 'Add a starburst to the image';
 
@@ -2574,6 +2829,79 @@ HELP
 
       gimp_drawable_apply_operation (drawable, progress,
                                      C_("undo-type", "Paper Tile"),
+                                     node);
+      g_object_unref (node);
+    }
+  else
+    success = FALSE;
+}
+CODE
+    );
+}
+
+sub plug_in_photocopy {
+    $blurb = 'Simulate color distortion produced by a copy machine';
+
+    $help = <<'HELP';
+Propagates dark values in an image based on each pixel's relative
+darkness to a neighboring average. The idea behind this filter is to
+give the look of a photocopied version of the image, with toner
+transferred based on the relative darkness of a particular
+region. This is achieved by darkening areas of the image which are
+measured to be darker than a neighborhood average and setting other
+pixels to white. In this way, sufficiently large shifts in intensity
+are darkened to black. The rate at which they are darkened to black is
+determined by the second pct_black parameter. The mask_radius
+parameter controls the size of the pixel neighborhood over which the
+average intensity is computed and then compared to each pixel in the
+neighborhood to decide whether or not to darken it to black. Large
+values for mask_radius result in very thick black areas bordering the
+regions of white and much less detail for black areas everywhere
+including inside regions of color. Small values result in less toner
+overall and more detail everywhere. Small values for the pct_black
+make the blend from the white regions to the black border lines
+smoother and the toner regions themselves thinner and less noticeable;
+larger values achieve the opposite effect.
+HELP
+
+    &std_pdb_compat('gegl:photocopy');
+    $date = '2019';
+
+    @inargs = (
+	{ name => 'run_mode', type => 'enum GimpRunMode', dead => 1,
+	  desc => 'The run mode' },
+	{ name => 'image', type => 'image', dead => 1,
+	  desc => 'Input image (unused)' },
+	{ name => 'drawable', type => 'drawable',
+	  desc => 'Input drawable' },
+	{ name => 'mask_radius', type => '3.0 <= float <= 50.0',
+	  desc => 'Photocopy mask radius (radius of pixel neighborhood)' },
+	{ name => 'sharpness', type => '0.0 <= float <= 1.0',
+	  desc => 'Sharpness (detail level)' },
+	{ name => 'pct_black', type => '0.0 <= float <= 1.0',
+	  desc => 'Percentage of darkened pixels to set to black' },
+	{ name => 'pct_white', type => '0.0 <= float <= 1.0',
+	  desc => 'Percentage of non-darkened pixels left white' },
+    );
+
+    %invoke = (
+	code => <<'CODE'
+{
+  if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                 GIMP_PDB_ITEM_CONTENT, error) &&
+      gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+    {
+      GeglNode *node =
+        gegl_node_new_child (NULL,
+                             "operation",   "gegl:photocopy",
+			     "mask-radius", mask_radius,
+			     "sharpness",   sharpness,
+			     "black",       pct_black,
+			     "white",       pct_white,
+                             NULL);
+
+      gimp_drawable_apply_operation (drawable, progress,
+                                     C_("undo-type", "Photocopy"),
                                      node);
       g_object_unref (node);
     }
@@ -3643,6 +3971,69 @@ HELP
 
       gimp_drawable_apply_operation (drawable, progress,
                                      C_("undo-type", "Sobel"),
+                                     node);
+      g_object_unref (node);
+    }
+  else
+    success = FALSE;
+}
+CODE
+    );
+}
+
+sub plug_in_softglow {
+    $blurb = 'Simulate glow by making highlights intense and fuzzy';
+
+    $help = <<'HELP';
+Gives an image a softglow effect by intensifying the highlights in the
+image. This is done by screening a modified version of the drawable
+with itself. The modified version is desaturated and then a sigmoidal
+transfer function is applied to force the distribution of intensities
+into very small and very large only. This desaturated version is then
+blurred to give it a fuzzy 'vaseline-on-the-lens' effect. The glow
+radius parameter controls the sharpness of the glow effect. The
+brightness parameter controls the degree of intensification applied to
+image highlights. The sharpness parameter controls how defined or
+alternatively, diffuse, the glow effect should be.
+HELP
+
+    &std_pdb_compat('gegl:softglow');
+    $date = '2019';
+
+    @inargs = (
+	{ name => 'run_mode', type => 'enum GimpRunMode', dead => 1,
+	  desc => 'The run mode' },
+	{ name => 'image', type => 'image', dead => 1,
+	  desc => 'Input image (unused)' },
+	{ name => 'drawable', type => 'drawable',
+	  desc => 'Input drawable' },
+	{ name => 'glow_radius', type => '0 <= float',
+	  desc => 'Glow radius in pixels' },
+	{ name => 'brightness', type => '0.0 <= float <= 1.0',
+	  desc => 'Glow brightness' },
+	{ name => 'sharpness', type => '0.0 <= float <= 1.0',
+	  desc => 'Glow sharpness' }
+    );
+
+    %invoke = (
+	code => <<'CODE'
+{
+  if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                 GIMP_PDB_ITEM_CONTENT, error) &&
+      gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+    {
+      GeglNode *node =
+        gegl_node_new_child (NULL,
+                             "operation",  "gegl:softglow",
+                             "glow-radius", glow_radius,
+                             "brightness",  brightness,
+                             "sharpness",   sharpness,
+                             NULL);
+
+      node = wrap_in_gamma_cast (node, drawable);
+
+      gimp_drawable_apply_operation (drawable, progress,
+                                     C_("undo-type", "Softglow"),
                                      node);
       g_object_unref (node);
     }
@@ -4727,6 +5118,7 @@ CODE
             plug_in_bump_map
             plug_in_bump_map_tiled
             plug_in_c_astretch
+            plug_in_cartoon
             plug_in_colors_channel_mixer
             plug_in_colortoalpha
             plug_in_convmatrix
@@ -4735,6 +5127,7 @@ CODE
             plug_in_diffraction
             plug_in_displace
             plug_in_displace_polar
+            plug_in_dog
             plug_in_edge
             plug_in_engrave
             plug_in_exchange
@@ -4755,8 +5148,11 @@ CODE
             plug_in_mblur
             plug_in_mblur_inward
             plug_in_mosaic
+            plug_in_neon
+            plug_in_normalize
             plug_in_nova
             plug_in_papertile
+            plug_in_photocopy
             plug_in_pixelize
             plug_in_pixelize2
             plug_in_plasma
@@ -4774,6 +5170,7 @@ CODE
             plug_in_shift
             plug_in_sinus
             plug_in_sobel
+            plug_in_softglow
             plug_in_solid_noise
             plug_in_spread
             plug_in_threshold_alpha

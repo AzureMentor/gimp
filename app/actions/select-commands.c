@@ -72,8 +72,9 @@ static void   select_shrink_callback  (GtkWidget *widget,
 /*  public functions  */
 
 void
-select_all_cmd_callback (GtkAction *action,
-                         gpointer   data)
+select_all_cmd_callback (GimpAction *action,
+                         GVariant   *value,
+                         gpointer    data)
 {
   GimpImage *image;
   return_if_no_image (image, data);
@@ -83,8 +84,9 @@ select_all_cmd_callback (GtkAction *action,
 }
 
 void
-select_none_cmd_callback (GtkAction *action,
-                          gpointer   data)
+select_none_cmd_callback (GimpAction *action,
+                          GVariant   *value,
+                          gpointer    data)
 {
   GimpImage *image;
   return_if_no_image (image, data);
@@ -94,8 +96,9 @@ select_none_cmd_callback (GtkAction *action,
 }
 
 void
-select_invert_cmd_callback (GtkAction *action,
-                            gpointer   data)
+select_invert_cmd_callback (GimpAction *action,
+                            GVariant   *value,
+                            gpointer    data)
 {
   GimpImage *image;
   return_if_no_image (image, data);
@@ -105,8 +108,9 @@ select_invert_cmd_callback (GtkAction *action,
 }
 
 void
-select_float_cmd_callback (GtkAction *action,
-                           gpointer   data)
+select_float_cmd_callback (GimpAction *action,
+                           GVariant   *value,
+                           gpointer    data)
 {
   GimpImage *image;
   GtkWidget *widget;
@@ -131,8 +135,9 @@ select_float_cmd_callback (GtkAction *action,
 }
 
 void
-select_feather_cmd_callback (GtkAction *action,
-                             gpointer   data)
+select_feather_cmd_callback (GimpAction *action,
+                             GVariant   *value,
+                             gpointer    data)
 {
   GimpDisplay *display;
   GimpImage   *image;
@@ -186,8 +191,9 @@ select_feather_cmd_callback (GtkAction *action,
 }
 
 void
-select_sharpen_cmd_callback (GtkAction *action,
-                             gpointer   data)
+select_sharpen_cmd_callback (GimpAction *action,
+                             GVariant   *value,
+                             gpointer    data)
 {
   GimpImage *image;
   return_if_no_image (image, data);
@@ -197,8 +203,9 @@ select_sharpen_cmd_callback (GtkAction *action,
 }
 
 void
-select_shrink_cmd_callback (GtkAction *action,
-                            gpointer   data)
+select_shrink_cmd_callback (GimpAction *action,
+                            GVariant   *value,
+                            gpointer    data)
 {
   GimpDisplay *display;
   GimpImage   *image;
@@ -260,8 +267,9 @@ select_shrink_cmd_callback (GtkAction *action,
 }
 
 void
-select_grow_cmd_callback (GtkAction *action,
-                          gpointer   data)
+select_grow_cmd_callback (GimpAction *action,
+                          GVariant   *value,
+                          gpointer    data)
 {
   GimpDisplay *display;
   GimpImage   *image;
@@ -309,8 +317,9 @@ select_grow_cmd_callback (GtkAction *action,
 }
 
 void
-select_border_cmd_callback (GtkAction *action,
-                            gpointer   data)
+select_border_cmd_callback (GimpAction *action,
+                            GVariant   *value,
+                            gpointer    data)
 {
   GimpDisplay *display;
   GimpImage   *image;
@@ -386,8 +395,9 @@ select_border_cmd_callback (GtkAction *action,
 }
 
 void
-select_flood_cmd_callback (GtkAction *action,
-                           gpointer   data)
+select_flood_cmd_callback (GimpAction *action,
+                           GVariant   *value,
+                           gpointer    data)
 {
   GimpImage *image;
   return_if_no_image (image, data);
@@ -397,8 +407,9 @@ select_flood_cmd_callback (GtkAction *action,
 }
 
 void
-select_save_cmd_callback (GtkAction *action,
-                          gpointer   data)
+select_save_cmd_callback (GimpAction *action,
+                          GVariant   *value,
+                          gpointer    data)
 {
   GimpImage   *image;
   GimpChannel *channel;
@@ -424,8 +435,9 @@ select_save_cmd_callback (GtkAction *action,
 }
 
 void
-select_fill_cmd_callback (GtkAction *action,
-                          gpointer   data)
+select_fill_cmd_callback (GimpAction *action,
+                          GVariant   *value,
+                          gpointer    data)
 {
   GimpImage *image;
   return_if_no_image (image, data);
@@ -440,8 +452,9 @@ select_fill_cmd_callback (GtkAction *action,
 }
 
 void
-select_fill_last_vals_cmd_callback (GtkAction *action,
-                                    gpointer   data)
+select_fill_last_vals_cmd_callback (GimpAction *action,
+                                    GVariant   *value,
+                                    gpointer    data)
 {
   GimpImage *image;
   return_if_no_image (image, data);
@@ -453,8 +466,9 @@ select_fill_last_vals_cmd_callback (GtkAction *action,
 }
 
 void
-select_stroke_cmd_callback (GtkAction *action,
-                            gpointer   data)
+select_stroke_cmd_callback (GimpAction *action,
+                            GVariant   *value,
+                            gpointer    data)
 {
   GimpImage *image;
   return_if_no_image (image, data);
@@ -469,8 +483,9 @@ select_stroke_cmd_callback (GtkAction *action,
 }
 
 void
-select_stroke_last_vals_cmd_callback (GtkAction *action,
-                                      gpointer   data)
+select_stroke_last_vals_cmd_callback (GimpAction *action,
+                                      GVariant   *value,
+                                      gpointer    data)
 {
   GimpImage *image;
   return_if_no_image (image, data);

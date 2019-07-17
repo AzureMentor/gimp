@@ -19,13 +19,15 @@
 #define __WINDOW_COMMANDS_H__
 
 
-void   window_close_cmd_callback          (GtkAction *action,
-                                           gpointer   data);
-void   window_open_display_cmd_callback   (GtkAction *action,
-                                           gpointer   data);
-void   window_move_to_screen_cmd_callback (GtkAction *action,
-                                           GtkAction *current,
-                                           gpointer   data);
+void   window_close_cmd_callback          (GimpAction *action,
+                                           GVariant   *value,
+                                           gpointer    data);
+void   window_open_display_cmd_callback   (GimpAction *action,
+                                           GVariant   *value,
+                                           gpointer    data);
+void   window_move_to_screen_cmd_callback (GimpAction *action,
+                                           GVariant   *value,
+                                           gpointer    data);
 
 
 #endif /* __WINDOW_COMMANDS_H__ */

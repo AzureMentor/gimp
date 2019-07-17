@@ -228,8 +228,6 @@ libgimp_sources = \
 	gimppatternselect.h	\
 	gimppixbuf.c		\
 	gimppixbuf.h		\
-	gimppixelfetcher.c	\
-	gimppixelfetcher.h	\
 	gimppixelrgn.c		\
 	gimppixelrgn.h		\
 	gimpplugin.c		\
@@ -238,8 +236,6 @@ libgimp_sources = \
 	gimpproceduraldb.h	\
 	gimpprogress.c		\
 	gimpprogress.h		\
-	gimpregioniterator.c	\
-	gimpregioniterator.h	\
 	gimpselection.c		\
 	gimpselection.h		\
 	gimptile.c		\
@@ -323,12 +319,10 @@ gimpinclude_HEADERS = \
 	gimplayer.h			\
 	gimppaletteselect.h		\
 	gimppatternselect.h		\
-	gimppixelfetcher.h		\
 	gimppixelrgn.h			\
 	gimpplugin.h			\
 	gimpproceduraldb.h		\
 	gimpprogress.h			\
-	gimpregioniterator.h		\
 	gimpselection.h			\
 	gimptile.h			\
 	\

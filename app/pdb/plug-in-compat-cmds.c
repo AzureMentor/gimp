@@ -871,6 +871,49 @@ plug_in_c_astretch_invoker (GimpProcedure         *procedure,
 }
 
 static GimpValueArray *
+plug_in_cartoon_invoker (GimpProcedure         *procedure,
+                         Gimp                  *gimp,
+                         GimpContext           *context,
+                         GimpProgress          *progress,
+                         const GimpValueArray  *args,
+                         GError               **error)
+{
+  gboolean success = TRUE;
+  GimpDrawable *drawable;
+  gdouble mask_radius;
+  gdouble pct_black;
+
+  drawable = gimp_value_get_drawable (gimp_value_array_index (args, 2), gimp);
+  mask_radius = g_value_get_double (gimp_value_array_index (args, 3));
+  pct_black = g_value_get_double (gimp_value_array_index (args, 4));
+
+  if (success)
+    {
+      if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                     GIMP_PDB_ITEM_CONTENT, error) &&
+          gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+        {
+          GeglNode *node =
+            gegl_node_new_child (NULL,
+                                 "operation",   "gegl:cartoon",
+                                 "mask-radius", mask_radius,
+                                 "pct-black",   pct_black,
+                                 NULL);
+
+          gimp_drawable_apply_operation (drawable, progress,
+                                         C_("undo-type", "Cartoon"),
+                                         node);
+          g_object_unref (node);
+        }
+      else
+        success = FALSE;
+    }
+
+  return gimp_procedure_get_return_values (procedure, success,
+                                           error ? *error : NULL);
+}
+
+static GimpValueArray *
 plug_in_colors_channel_mixer_invoker (GimpProcedure         *procedure,
                                       Gimp                  *gimp,
                                       GimpContext           *context,
@@ -1391,6 +1434,85 @@ plug_in_displace_polar_invoker (GimpProcedure         *procedure,
                           1,
                           progress,
                           error);
+    }
+
+  return gimp_procedure_get_return_values (procedure, success,
+                                           error ? *error : NULL);
+}
+
+static GimpValueArray *
+plug_in_dog_invoker (GimpProcedure         *procedure,
+                     Gimp                  *gimp,
+                     GimpContext           *context,
+                     GimpProgress          *progress,
+                     const GimpValueArray  *args,
+                     GError               **error)
+{
+  gboolean success = TRUE;
+  GimpImage *image;
+  GimpDrawable *drawable;
+  gdouble inner;
+  gdouble outer;
+  gboolean normalize;
+  gboolean invert;
+
+  image = gimp_value_get_image (gimp_value_array_index (args, 1), gimp);
+  drawable = gimp_value_get_drawable (gimp_value_array_index (args, 2), gimp);
+  inner = g_value_get_double (gimp_value_array_index (args, 3));
+  outer = g_value_get_double (gimp_value_array_index (args, 4));
+  normalize = g_value_get_boolean (gimp_value_array_index (args, 5));
+  invert = g_value_get_boolean (gimp_value_array_index (args, 6));
+
+  if (success)
+    {
+      if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                     GIMP_PDB_ITEM_CONTENT, error) &&
+          gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+        {
+          GeglNode *node;
+
+          if (normalize || invert)
+            gimp_image_undo_group_start (image, GIMP_UNDO_GROUP_MISC,
+                                         C_("undo-type", "DoG Edge Detect"));
+
+          node = gegl_node_new_child (NULL,
+                                      "operation", "gegl:difference-of-gaussians",
+                                      "radius1",   inner * 0.32,
+                                      "radius2",   outer * 0.32,
+                                      NULL);
+
+          node = wrap_in_gamma_cast (node, drawable);
+
+          gimp_drawable_apply_operation (drawable, progress,
+                                         C_("undo-type", "DoG Edge Detect"),
+                                         node);
+          g_object_unref (node);
+
+          if (normalize)
+            {
+              node = gegl_node_new_child (NULL,
+                                          "operation",   "gegl:stretch-contrast",
+                                          "keep-colors", TRUE,
+                                          "perceptual",  TRUE,
+                                          NULL);
+
+              gimp_drawable_apply_operation (drawable, progress,
+                                             C_("undo-type", "Normalize"),
+                                             node);
+              g_object_unref (node);
+            }
+
+          if (invert)
+            gimp_drawable_apply_operation_by_name (drawable, progress,
+                                                   C_("undo-type", "Invert"),
+                                                   "gegl:invert-gamma",
+                                                   NULL);
+
+          if (normalize || invert)
+            gimp_image_undo_group_end (image);
+        }
+      else
+        success = FALSE;
     }
 
   return gimp_procedure_get_return_values (procedure, success,
@@ -2463,6 +2585,90 @@ plug_in_mosaic_invoker (GimpProcedure         *procedure,
 }
 
 static GimpValueArray *
+plug_in_neon_invoker (GimpProcedure         *procedure,
+                      Gimp                  *gimp,
+                      GimpContext           *context,
+                      GimpProgress          *progress,
+                      const GimpValueArray  *args,
+                      GError               **error)
+{
+  gboolean success = TRUE;
+  GimpDrawable *drawable;
+  gdouble radius;
+  gdouble amount;
+
+  drawable = gimp_value_get_drawable (gimp_value_array_index (args, 2), gimp);
+  radius = g_value_get_double (gimp_value_array_index (args, 3));
+  amount = g_value_get_double (gimp_value_array_index (args, 4));
+
+  if (success)
+    {
+      if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                     GIMP_PDB_ITEM_CONTENT, error) &&
+          gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+        {
+          GeglNode *node;
+
+          node = gegl_node_new_child (NULL,
+                                      "operation", "gegl:edge-neon",
+                                      "radius",    radius,
+                                      "amount",    amount,
+                                      NULL);
+
+          gimp_drawable_apply_operation (drawable, progress,
+                                         C_("undo-type", "Neon"),
+                                         node);
+          g_object_unref (node);
+        }
+      else
+        success = FALSE;
+    }
+
+  return gimp_procedure_get_return_values (procedure, success,
+                                           error ? *error : NULL);
+}
+
+static GimpValueArray *
+plug_in_normalize_invoker (GimpProcedure         *procedure,
+                           Gimp                  *gimp,
+                           GimpContext           *context,
+                           GimpProgress          *progress,
+                           const GimpValueArray  *args,
+                           GError               **error)
+{
+  gboolean success = TRUE;
+  GimpDrawable *drawable;
+
+  drawable = gimp_value_get_drawable (gimp_value_array_index (args, 2), gimp);
+
+  if (success)
+    {
+      if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                     GIMP_PDB_ITEM_CONTENT, error) &&
+          gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+        {
+          GeglNode *node;
+
+          node = gegl_node_new_child (NULL,
+                                      "operation",   "gegl:stretch-contrast",
+                                      "keep-colors", TRUE,
+                                      "perceptual",  TRUE,
+                                      NULL);
+
+          gimp_drawable_apply_operation (drawable, progress,
+                                         C_("undo-type", "Normalize"),
+                                         node);
+          g_object_unref (node);
+        }
+      else
+        success = FALSE;
+    }
+
+  return gimp_procedure_get_return_values (procedure, success,
+                                           error ? *error : NULL);
+}
+
+static GimpValueArray *
 plug_in_nova_invoker (GimpProcedure         *procedure,
                       Gimp                  *gimp,
                       GimpContext           *context,
@@ -2603,6 +2809,55 @@ plug_in_papertile_invoker (GimpProcedure         *procedure,
 
           gimp_drawable_apply_operation (drawable, progress,
                                          C_("undo-type", "Paper Tile"),
+                                         node);
+          g_object_unref (node);
+        }
+      else
+        success = FALSE;
+    }
+
+  return gimp_procedure_get_return_values (procedure, success,
+                                           error ? *error : NULL);
+}
+
+static GimpValueArray *
+plug_in_photocopy_invoker (GimpProcedure         *procedure,
+                           Gimp                  *gimp,
+                           GimpContext           *context,
+                           GimpProgress          *progress,
+                           const GimpValueArray  *args,
+                           GError               **error)
+{
+  gboolean success = TRUE;
+  GimpDrawable *drawable;
+  gdouble mask_radius;
+  gdouble sharpness;
+  gdouble pct_black;
+  gdouble pct_white;
+
+  drawable = gimp_value_get_drawable (gimp_value_array_index (args, 2), gimp);
+  mask_radius = g_value_get_double (gimp_value_array_index (args, 3));
+  sharpness = g_value_get_double (gimp_value_array_index (args, 4));
+  pct_black = g_value_get_double (gimp_value_array_index (args, 5));
+  pct_white = g_value_get_double (gimp_value_array_index (args, 6));
+
+  if (success)
+    {
+      if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                     GIMP_PDB_ITEM_CONTENT, error) &&
+          gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+        {
+          GeglNode *node =
+            gegl_node_new_child (NULL,
+                                 "operation",   "gegl:photocopy",
+                                 "mask-radius", mask_radius,
+                                 "sharpness",   sharpness,
+                                 "black",       pct_black,
+                                 "white",       pct_white,
+                                 NULL);
+
+          gimp_drawable_apply_operation (drawable, progress,
+                                         C_("undo-type", "Photocopy"),
                                          node);
           g_object_unref (node);
         }
@@ -3543,6 +3798,54 @@ plug_in_sobel_invoker (GimpProcedure         *procedure,
 
           gimp_drawable_apply_operation (drawable, progress,
                                          C_("undo-type", "Sobel"),
+                                         node);
+          g_object_unref (node);
+        }
+      else
+        success = FALSE;
+    }
+
+  return gimp_procedure_get_return_values (procedure, success,
+                                           error ? *error : NULL);
+}
+
+static GimpValueArray *
+plug_in_softglow_invoker (GimpProcedure         *procedure,
+                          Gimp                  *gimp,
+                          GimpContext           *context,
+                          GimpProgress          *progress,
+                          const GimpValueArray  *args,
+                          GError               **error)
+{
+  gboolean success = TRUE;
+  GimpDrawable *drawable;
+  gdouble glow_radius;
+  gdouble brightness;
+  gdouble sharpness;
+
+  drawable = gimp_value_get_drawable (gimp_value_array_index (args, 2), gimp);
+  glow_radius = g_value_get_double (gimp_value_array_index (args, 3));
+  brightness = g_value_get_double (gimp_value_array_index (args, 4));
+  sharpness = g_value_get_double (gimp_value_array_index (args, 5));
+
+  if (success)
+    {
+      if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                     GIMP_PDB_ITEM_CONTENT, error) &&
+          gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+        {
+          GeglNode *node =
+            gegl_node_new_child (NULL,
+                                 "operation",  "gegl:softglow",
+                                 "glow-radius", glow_radius,
+                                 "brightness",  brightness,
+                                 "sharpness",   sharpness,
+                                 NULL);
+
+          node = wrap_in_gamma_cast (node, drawable);
+
+          gimp_drawable_apply_operation (drawable, progress,
+                                         C_("undo-type", "Softglow"),
                                          node);
           g_object_unref (node);
         }
@@ -4784,6 +5087,55 @@ register_plug_in_compat_procs (GimpPDB *pdb)
   g_object_unref (procedure);
 
   /*
+   * gimp-plug-in-cartoon
+   */
+  procedure = gimp_procedure_new (plug_in_cartoon_invoker);
+  gimp_object_set_static_name (GIMP_OBJECT (procedure),
+                               "plug-in-cartoon");
+  gimp_procedure_set_static_strings (procedure,
+                                     "plug-in-cartoon",
+                                     "Simulate a cartoon by enhancing edges",
+                                     "Propagates dark values in an image based on each pixel's relative darkness to a neighboring average. The idea behind this filter is to give the look of a black felt pen drawing subsequently shaded with color. This is achieved by darkening areas of the image which are measured to be darker than a neighborhood average. In this way, sufficiently large shifts in intensity are darkened to black. The rate at which they are darkened to black is determined by the second pct_black parameter. The mask_radius parameter controls the size of the pixel neighborhood over which the average intensity is computed and then compared to each pixel in the neighborhood to decide whether or not to darken it to black. Large values for mask_radius result in very thick black areas bordering the shaded regions of color and much less detail for black areas everywhere including inside regions of color. Small values result in more subtle pen strokes and detail everywhere. Small values for the pct_black make the\n"
+                                     "blend from the color regions to the black border lines smoother and the lines themselves thinner and less noticeable; larger values achieve the opposite effect.",
+                                     "Compatibility procedure. Please see 'gegl:cartoon' for credits.",
+                                     "Compatibility procedure. Please see 'gegl:cartoon' for credits.",
+                                     "2019",
+                                     NULL);
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_enum ("run-mode",
+                                                  "run mode",
+                                                  "The run mode",
+                                                  GIMP_TYPE_RUN_MODE,
+                                                  GIMP_RUN_INTERACTIVE,
+                                                  GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_image_id ("image",
+                                                         "image",
+                                                         "Input image (unused)",
+                                                         pdb->gimp, FALSE,
+                                                         GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_drawable_id ("drawable",
+                                                            "drawable",
+                                                            "Input drawable",
+                                                            pdb->gimp, FALSE,
+                                                            GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("mask-radius",
+                                                    "mask radius",
+                                                    "Cartoon mask radius (radius of pixel neighborhood)",
+                                                    1.0, 50.0, 1.0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("pct-black",
+                                                    "pct black",
+                                                    "Percentage of darkened pixels to set to black",
+                                                    0.0, 1.0, 0.0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_pdb_register_procedure (pdb, procedure);
+  g_object_unref (procedure);
+
+  /*
    * gimp-plug-in-colors-channel-mixer
    */
   procedure = gimp_procedure_new (plug_in_colors_channel_mixer_invoker);
@@ -5361,6 +5713,66 @@ register_plug_in_compat_procs (GimpPDB *pdb)
                                                       "Edge behavior { WRAP (1), SMEAR (2), BLACK (3) }",
                                                       1, 3, 1,
                                                       GIMP_PARAM_READWRITE));
+  gimp_pdb_register_procedure (pdb, procedure);
+  g_object_unref (procedure);
+
+  /*
+   * gimp-plug-in-dog
+   */
+  procedure = gimp_procedure_new (plug_in_dog_invoker);
+  gimp_object_set_static_name (GIMP_OBJECT (procedure),
+                               "plug-in-dog");
+  gimp_procedure_set_static_strings (procedure,
+                                     "plug-in-dog",
+                                     "Edge detection with control of edge thickness",
+                                     "Applies two Gaussian blurs to the drawable, and subtracts the results. This is robust and widely used method for detecting edges.",
+                                     "Compatibility procedure. Please see 'gegl:difference-of-gaussians' for credits.",
+                                     "Compatibility procedure. Please see 'gegl:difference-of-gaussians' for credits.",
+                                     "2015",
+                                     NULL);
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_enum ("run-mode",
+                                                  "run mode",
+                                                  "The run mode",
+                                                  GIMP_TYPE_RUN_MODE,
+                                                  GIMP_RUN_INTERACTIVE,
+                                                  GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_image_id ("image",
+                                                         "image",
+                                                         "Input image (unused)",
+                                                         pdb->gimp, FALSE,
+                                                         GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_drawable_id ("drawable",
+                                                            "drawable",
+                                                            "Input drawable",
+                                                            pdb->gimp, FALSE,
+                                                            GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("inner",
+                                                    "inner",
+                                                    "Radius of inner gaussian blur in pixels",
+                                                    0.0, 10.0, 0.0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("outer",
+                                                    "outer",
+                                                    "Radius of outer gaussian blur in pixels",
+                                                    0.0, 10.0, 0.0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_boolean ("normalize",
+                                                     "normalize",
+                                                     "Normalize",
+                                                     FALSE,
+                                                     GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_boolean ("invert",
+                                                     "invert",
+                                                     "Invert",
+                                                     FALSE,
+                                                     GIMP_PARAM_READWRITE));
   gimp_pdb_register_procedure (pdb, procedure);
   g_object_unref (procedure);
 
@@ -6553,6 +6965,90 @@ register_plug_in_compat_procs (GimpPDB *pdb)
   g_object_unref (procedure);
 
   /*
+   * gimp-plug-in-neon
+   */
+  procedure = gimp_procedure_new (plug_in_neon_invoker);
+  gimp_object_set_static_name (GIMP_OBJECT (procedure),
+                               "plug-in-neon");
+  gimp_procedure_set_static_strings (procedure,
+                                     "plug-in-neon",
+                                     "Simulate the glowing boundary of a neon light",
+                                     "This filter works in a manner similar to the edge plug-in, but uses the first derivative of the gaussian operator to achieve resolution independence. The IIR method of calculating the effect is utilized to keep the processing time constant between large and small standard deviations.",
+                                     "Compatibility procedure. Please see 'gegl:edge-neon' for credits.",
+                                     "Compatibility procedure. Please see 'gegl:edge-neon' for credits.",
+                                     "2019",
+                                     NULL);
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_enum ("run-mode",
+                                                  "run mode",
+                                                  "The run mode",
+                                                  GIMP_TYPE_RUN_MODE,
+                                                  GIMP_RUN_INTERACTIVE,
+                                                  GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_image_id ("image",
+                                                         "image",
+                                                         "Input image (unused)",
+                                                         pdb->gimp, FALSE,
+                                                         GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_drawable_id ("drawable",
+                                                            "drawable",
+                                                            "Input drawable",
+                                                            pdb->gimp, FALSE,
+                                                            GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("radius",
+                                                    "radius",
+                                                    "Radius of neon effect (in pixels)",
+                                                    0.0, 1500.0, 0.0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("amount",
+                                                    "amount",
+                                                    "Effect enhancement variable",
+                                                    0.0, 100.0, 0.0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_pdb_register_procedure (pdb, procedure);
+  g_object_unref (procedure);
+
+  /*
+   * gimp-plug-in-normalize
+   */
+  procedure = gimp_procedure_new (plug_in_normalize_invoker);
+  gimp_object_set_static_name (GIMP_OBJECT (procedure),
+                               "plug-in-normalize");
+  gimp_procedure_set_static_strings (procedure,
+                                     "plug-in-normalize",
+                                     "Stretch brightness values to cover the full range",
+                                     "This plug-in performs almost the same operation as the 'contrast autostretch' plug-in, except that it won't allow the color channels to normalize independently. This is actually what most people probably want instead of contrast-autostretch; use c-a only if you wish to remove an undesirable color-tint from a source image which is supposed to contain pure-white and pure-black.",
+                                     "Compatibility procedure. Please see 'gegl:stretch-contrast' for credits.",
+                                     "Compatibility procedure. Please see 'gegl:stretch-contrast' for credits.",
+                                     "2019",
+                                     NULL);
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_enum ("run-mode",
+                                                  "run mode",
+                                                  "The run mode",
+                                                  GIMP_TYPE_RUN_MODE,
+                                                  GIMP_RUN_INTERACTIVE,
+                                                  GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_image_id ("image",
+                                                         "image",
+                                                         "Input image (unused)",
+                                                         pdb->gimp, FALSE,
+                                                         GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_drawable_id ("drawable",
+                                                            "drawable",
+                                                            "Input drawable",
+                                                            pdb->gimp, FALSE,
+                                                            GIMP_PARAM_READWRITE));
+  gimp_pdb_register_procedure (pdb, procedure);
+  g_object_unref (procedure);
+
+  /*
    * gimp-plug-in-nova
    */
   procedure = gimp_procedure_new (plug_in_nova_invoker);
@@ -6707,6 +7203,67 @@ register_plug_in_compat_procs (GimpPDB *pdb)
                                                       "Background alpha (unused)",
                                                       G_MININT32, G_MAXINT32, 0,
                                                       GIMP_PARAM_READWRITE));
+  gimp_pdb_register_procedure (pdb, procedure);
+  g_object_unref (procedure);
+
+  /*
+   * gimp-plug-in-photocopy
+   */
+  procedure = gimp_procedure_new (plug_in_photocopy_invoker);
+  gimp_object_set_static_name (GIMP_OBJECT (procedure),
+                               "plug-in-photocopy");
+  gimp_procedure_set_static_strings (procedure,
+                                     "plug-in-photocopy",
+                                     "Simulate color distortion produced by a copy machine",
+                                     "Propagates dark values in an image based on each pixel's relative darkness to a neighboring average. The idea behind this filter is to give the look of a photocopied version of the image, with toner transferred based on the relative darkness of a particular region. This is achieved by darkening areas of the image which are measured to be darker than a neighborhood average and setting other pixels to white. In this way, sufficiently large shifts in intensity are darkened to black. The rate at which they are darkened to black is determined by the second pct_black parameter. The mask_radius parameter controls the size of the pixel neighborhood over which the average intensity is computed and then compared to each pixel in the neighborhood to decide whether or not to darken it to black. Large values for mask_radius result in very thick black areas bordering the regions of white and much less detail for black areas everywhere including inside regions of color. Small values result in\n"
+                                     "less toner overall and more detail everywhere. Small values for the pct_black make the blend from the white regions to the black border lines smoother and the toner regions themselves thinner and less noticeable; larger values achieve the opposite effect.",
+                                     "Compatibility procedure. Please see 'gegl:photocopy' for credits.",
+                                     "Compatibility procedure. Please see 'gegl:photocopy' for credits.",
+                                     "2019",
+                                     NULL);
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_enum ("run-mode",
+                                                  "run mode",
+                                                  "The run mode",
+                                                  GIMP_TYPE_RUN_MODE,
+                                                  GIMP_RUN_INTERACTIVE,
+                                                  GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_image_id ("image",
+                                                         "image",
+                                                         "Input image (unused)",
+                                                         pdb->gimp, FALSE,
+                                                         GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_drawable_id ("drawable",
+                                                            "drawable",
+                                                            "Input drawable",
+                                                            pdb->gimp, FALSE,
+                                                            GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("mask-radius",
+                                                    "mask radius",
+                                                    "Photocopy mask radius (radius of pixel neighborhood)",
+                                                    3.0, 50.0, 3.0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("sharpness",
+                                                    "sharpness",
+                                                    "Sharpness (detail level)",
+                                                    0.0, 1.0, 0.0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("pct-black",
+                                                    "pct black",
+                                                    "Percentage of darkened pixels to set to black",
+                                                    0.0, 1.0, 0.0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("pct-white",
+                                                    "pct white",
+                                                    "Percentage of non-darkened pixels left white",
+                                                    0.0, 1.0, 0.0,
+                                                    GIMP_PARAM_READWRITE));
   gimp_pdb_register_procedure (pdb, procedure);
   g_object_unref (procedure);
 
@@ -7699,6 +8256,60 @@ register_plug_in_compat_procs (GimpPDB *pdb)
                                                      "Keep sign of result (one direction only)",
                                                      FALSE,
                                                      GIMP_PARAM_READWRITE));
+  gimp_pdb_register_procedure (pdb, procedure);
+  g_object_unref (procedure);
+
+  /*
+   * gimp-plug-in-softglow
+   */
+  procedure = gimp_procedure_new (plug_in_softglow_invoker);
+  gimp_object_set_static_name (GIMP_OBJECT (procedure),
+                               "plug-in-softglow");
+  gimp_procedure_set_static_strings (procedure,
+                                     "plug-in-softglow",
+                                     "Simulate glow by making highlights intense and fuzzy",
+                                     "Gives an image a softglow effect by intensifying the highlights in the image. This is done by screening a modified version of the drawable with itself. The modified version is desaturated and then a sigmoidal transfer function is applied to force the distribution of intensities into very small and very large only. This desaturated version is then blurred to give it a fuzzy 'vaseline-on-the-lens' effect. The glow radius parameter controls the sharpness of the glow effect. The brightness parameter controls the degree of intensification applied to image highlights. The sharpness parameter controls how defined or alternatively, diffuse, the glow effect should be.",
+                                     "Compatibility procedure. Please see 'gegl:softglow' for credits.",
+                                     "Compatibility procedure. Please see 'gegl:softglow' for credits.",
+                                     "2019",
+                                     NULL);
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_enum ("run-mode",
+                                                  "run mode",
+                                                  "The run mode",
+                                                  GIMP_TYPE_RUN_MODE,
+                                                  GIMP_RUN_INTERACTIVE,
+                                                  GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_image_id ("image",
+                                                         "image",
+                                                         "Input image (unused)",
+                                                         pdb->gimp, FALSE,
+                                                         GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_drawable_id ("drawable",
+                                                            "drawable",
+                                                            "Input drawable",
+                                                            pdb->gimp, FALSE,
+                                                            GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("glow-radius",
+                                                    "glow radius",
+                                                    "Glow radius in pixels",
+                                                    0, G_MAXDOUBLE, 0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("brightness",
+                                                    "brightness",
+                                                    "Glow brightness",
+                                                    0.0, 1.0, 0.0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("sharpness",
+                                                    "sharpness",
+                                                    "Glow sharpness",
+                                                    0.0, 1.0, 0.0,
+                                                    GIMP_PARAM_READWRITE));
   gimp_pdb_register_procedure (pdb, procedure);
   g_object_unref (procedure);
 

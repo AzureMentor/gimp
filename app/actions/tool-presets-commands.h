@@ -19,10 +19,12 @@
 #define __TOOL_PRESETS_COMMANDS_H__
 
 
-void   tool_presets_save_cmd_callback    (GtkAction *action,
-                                          gpointer   data);
-void   tool_presets_restore_cmd_callback (GtkAction *action,
-                                          gpointer   data);
+void   tool_presets_save_cmd_callback    (GimpAction *action,
+                                          GVariant   *value,
+                                          gpointer    data);
+void   tool_presets_restore_cmd_callback (GimpAction *action,
+                                          GVariant   *value,
+                                          gpointer    data);
 
 
 #endif /* __TOOL_PRESETS_COMMANDS_H__ */

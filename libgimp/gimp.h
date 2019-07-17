@@ -47,12 +47,10 @@
 #include <libgimp/gimppaletteselect.h>
 #include <libgimp/gimppatternselect.h>
 #include <libgimp/gimppixbuf.h>
-#include <libgimp/gimppixelfetcher.h>
 #include <libgimp/gimppixelrgn.h>
 #include <libgimp/gimpplugin.h>
 #include <libgimp/gimpproceduraldb.h>
 #include <libgimp/gimpprogress.h>
-#include <libgimp/gimpregioniterator.h>
 #include <libgimp/gimpselection.h>
 #include <libgimp/gimptile.h>
 

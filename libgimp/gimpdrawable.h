@@ -46,6 +46,7 @@ GeglBuffer   * gimp_drawable_get_buffer             (gint32         drawable_ID)
 GeglBuffer   * gimp_drawable_get_shadow_buffer      (gint32         drawable_ID);
 
 const Babl   * gimp_drawable_get_format             (gint32         drawable_ID);
+const Babl   * gimp_drawable_get_thumbnail_format   (gint32         drawable_ID);
 
 GIMP_DEPRECATED_FOR(gimp_drawable_get_buffer)
 GimpDrawable * gimp_drawable_get                    (gint32         drawable_ID);
@@ -58,16 +59,6 @@ GimpTile     * gimp_drawable_get_tile               (GimpDrawable  *drawable,
                                                      gboolean       shadow,
                                                      gint           row,
                                                      gint           col);
-GIMP_DEPRECATED_FOR(gimp_drawable_get_buffer)
-GimpTile     * gimp_drawable_get_tile2              (GimpDrawable  *drawable,
-                                                     gboolean       shadow,
-                                                     gint           x,
-                                                     gint           y);
-
-GIMP_DEPRECATED
-void           gimp_drawable_get_color_uchar        (gint32         drawable_ID,
-                                                     const GimpRGB *color,
-                                                     guchar        *color_uchar);
 
 guchar       * gimp_drawable_get_thumbnail_data     (gint32         drawable_ID,
                                                      gint          *width,
