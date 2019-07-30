@@ -136,7 +136,7 @@ wrap_in_gamma_cast (GeglNode     *node,
       cast_format =
         gimp_babl_format (gimp_babl_format_get_base_type (drawable_format),
                           gimp_babl_precision (gimp_babl_format_get_component_type (drawable_format),
-                                               TRUE),
+                                               GIMP_TRC_LINEAR),
                           babl_format_has_alpha (drawable_format),
                           babl_format_get_space (drawable_format));
 
@@ -352,6 +352,47 @@ gaussian_blur (GimpDrawable  *drawable,
     }
 
   return FALSE;
+}
+
+static gint
+newsprint_color_model (gint colorspace)
+{
+  switch (colorspace)
+    {
+    case 0: return 1; /* black on white */
+    case 1: return 2; /* rgb */
+    case 2: return 3; /* cmyk */
+    case 3: return 1; /* black on white */
+    }
+
+  return 2;
+}
+
+static gint
+newsprint_pattern (gint spotfn)
+{
+  switch (spotfn)
+    {
+    case 0: return 1; /* circle */
+    case 1: return 0; /* line */
+    case 2: return 2; /* diamond */
+    case 3: return 4; /* ps circle */
+    case 4: return 2; /* FIXME postscript diamond */
+    }
+
+  return 1;
+}
+
+static gdouble
+newsprint_angle (gdouble angle)
+{
+  while (angle > 180.0)
+    angle -= 360.0;
+
+  while (angle < -180.0)
+    angle += 360.0;
+
+  return angle;
 }
 
 static GimpValueArray *
@@ -1057,12 +1098,12 @@ plug_in_convmatrix_invoker (GimpProcedure         *procedure,
 
   drawable = gimp_value_get_drawable (gimp_value_array_index (args, 2), gimp);
   argc_matrix = g_value_get_int (gimp_value_array_index (args, 3));
-  matrix = gimp_value_get_floatarray (gimp_value_array_index (args, 4));
+  matrix = gimp_value_get_float_array (gimp_value_array_index (args, 4));
   alpha_alg = g_value_get_boolean (gimp_value_array_index (args, 5));
   divisor = g_value_get_double (gimp_value_array_index (args, 6));
   offset = g_value_get_double (gimp_value_array_index (args, 7));
   argc_channels = g_value_get_int (gimp_value_array_index (args, 8));
-  channels = gimp_value_get_int32array (gimp_value_array_index (args, 9));
+  channels = gimp_value_get_int32_array (gimp_value_array_index (args, 9));
   bmode = g_value_get_int (gimp_value_array_index (args, 10));
 
   if (success)
@@ -1577,6 +1618,57 @@ plug_in_edge_invoker (GimpProcedure         *procedure,
                                          C_("undo-type", "Edge"),
                                          node);
           g_object_unref (node);
+        }
+      else
+        success = FALSE;
+    }
+
+  return gimp_procedure_get_return_values (procedure, success,
+                                           error ? *error : NULL);
+}
+
+static GimpValueArray *
+plug_in_emboss_invoker (GimpProcedure         *procedure,
+                        Gimp                  *gimp,
+                        GimpContext           *context,
+                        GimpProgress          *progress,
+                        const GimpValueArray  *args,
+                        GError               **error)
+{
+  gboolean success = TRUE;
+  GimpDrawable *drawable;
+  gdouble azimuth;
+  gdouble elevation;
+  gint32 depth;
+  gboolean emboss;
+
+  drawable = gimp_value_get_drawable (gimp_value_array_index (args, 2), gimp);
+  azimuth = g_value_get_double (gimp_value_array_index (args, 3));
+  elevation = g_value_get_double (gimp_value_array_index (args, 4));
+  depth = g_value_get_int (gimp_value_array_index (args, 5));
+  emboss = g_value_get_boolean (gimp_value_array_index (args, 6));
+
+  if (success)
+    {
+      if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                     GIMP_PDB_ITEM_CONTENT, error) &&
+          gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+        {
+          GeglNode *node;
+
+          node = gegl_node_new_child (NULL,
+                                      "operation",  "gegl:emboss",
+                                      "type",       emboss ? 0 : 1,
+                                      "azimuth",    azimuth,
+                                      "elevation",  elevation,
+                                      "depth",      depth,
+                                      NULL);
+
+          node = wrap_in_gamma_cast (node, drawable);
+
+          gimp_drawable_apply_operation (drawable, progress,
+                                         C_("undo-type", "Emboss"),
+                                         node);
         }
       else
         success = FALSE;
@@ -2629,6 +2721,94 @@ plug_in_neon_invoker (GimpProcedure         *procedure,
 }
 
 static GimpValueArray *
+plug_in_newsprint_invoker (GimpProcedure         *procedure,
+                           Gimp                  *gimp,
+                           GimpContext           *context,
+                           GimpProgress          *progress,
+                           const GimpValueArray  *args,
+                           GError               **error)
+{
+  gboolean success = TRUE;
+  GimpDrawable *drawable;
+  gint32 cell_width;
+  gint32 colorspace;
+  gint32 k_pullout;
+  gdouble gry_ang;
+  gint32 gry_spotfn;
+  gdouble red_ang;
+  gint32 red_spotfn;
+  gdouble grn_ang;
+  gint32 grn_spotfn;
+  gdouble blu_ang;
+  gint32 blu_spotfn;
+  gint32 oversample;
+
+  drawable = gimp_value_get_drawable (gimp_value_array_index (args, 2), gimp);
+  cell_width = g_value_get_int (gimp_value_array_index (args, 3));
+  colorspace = g_value_get_int (gimp_value_array_index (args, 4));
+  k_pullout = g_value_get_int (gimp_value_array_index (args, 5));
+  gry_ang = g_value_get_double (gimp_value_array_index (args, 6));
+  gry_spotfn = g_value_get_int (gimp_value_array_index (args, 7));
+  red_ang = g_value_get_double (gimp_value_array_index (args, 8));
+  red_spotfn = g_value_get_int (gimp_value_array_index (args, 9));
+  grn_ang = g_value_get_double (gimp_value_array_index (args, 10));
+  grn_spotfn = g_value_get_int (gimp_value_array_index (args, 11));
+  blu_ang = g_value_get_double (gimp_value_array_index (args, 12));
+  blu_spotfn = g_value_get_int (gimp_value_array_index (args, 13));
+  oversample = g_value_get_int (gimp_value_array_index (args, 14));
+
+  if (success)
+    {
+      if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                     GIMP_PDB_ITEM_CONTENT, error) &&
+          gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+        {
+          GeglNode *node;
+          gint      color_model = newsprint_color_model (colorspace);
+          gint      pattern     = newsprint_pattern (gry_spotfn);
+          gint      pattern2    = newsprint_pattern (red_spotfn);
+          gint      pattern3    = newsprint_pattern (grn_spotfn);
+          gint      pattern4    = newsprint_pattern (blu_spotfn);
+          gdouble   angle       = newsprint_angle (gry_ang);
+          gdouble   angle2      = newsprint_angle (red_ang);
+          gdouble   angle3      = newsprint_angle (grn_ang);
+          gdouble   angle4      = newsprint_angle (blu_ang);
+
+          node = gegl_node_new_child (NULL,
+                                      "operation",     "gegl:newsprint",
+                                      "color-model",   color_model,
+                                      "black-pullout", (gdouble) k_pullout / 100.0,
+                                      "period",        (gdouble) cell_width,
+                                      "angle",         angle,
+                                      "pattern",       pattern,
+                                      "period2",       (gdouble) cell_width,
+                                      "angle2",        angle2,
+                                      "pattern2",      pattern2,
+                                      "period3",       (gdouble) cell_width,
+                                      "angle3",        angle3,
+                                      "pattern3",      pattern3,
+                                      "period4",       (gdouble) cell_width,
+                                      "angle4",        angle4,
+                                      "pattern4",      pattern4,
+                                      "aa-samples",    oversample,
+                                      NULL);
+
+          node = wrap_in_gamma_cast (node, drawable);
+
+          gimp_drawable_apply_operation (drawable, progress,
+                                         C_("undo-type", "Newsprint"),
+                                         node);
+          g_object_unref (node);
+        }
+      else
+        success = FALSE;
+    }
+
+  return gimp_procedure_get_return_values (procedure, success,
+                                           error ? *error : NULL);
+}
+
+static GimpValueArray *
 plug_in_normalize_invoker (GimpProcedure         *procedure,
                            Gimp                  *gimp,
                            GimpContext           *context,
@@ -2719,6 +2899,115 @@ plug_in_nova_invoker (GimpProcedure         *procedure,
 
           gimp_drawable_apply_operation (drawable, progress,
                                          C_("undo-type", "Supernova"),
+                                         node);
+          g_object_unref (node);
+        }
+      else
+        success = FALSE;
+    }
+
+  return gimp_procedure_get_return_values (procedure, success,
+                                           error ? *error : NULL);
+}
+
+static GimpValueArray *
+plug_in_oilify2_invoker (GimpProcedure         *procedure,
+                         Gimp                  *gimp,
+                         GimpContext           *context,
+                         GimpProgress          *progress,
+                         const GimpValueArray  *args,
+                         GError               **error)
+{
+  gboolean success = TRUE;
+  GimpDrawable *drawable;
+  gint32 mask_size;
+  gint32 mode;
+
+  drawable = gimp_value_get_drawable (gimp_value_array_index (args, 2), gimp);
+  mask_size = g_value_get_int (gimp_value_array_index (args, 3));
+  mode = g_value_get_int (gimp_value_array_index (args, 4));
+
+  if (success)
+    {
+      if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                     GIMP_PDB_ITEM_CONTENT, error) &&
+          gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+        {
+          GeglNode *node;
+
+          node = gegl_node_new_child (NULL,
+                                      "operation",       "gegl:oilify",
+                                      "mask-radius",     MAX (1, mask_size / 2),
+                                      "use-inten",       mode ? TRUE : FALSE,
+                                      NULL);
+
+          gimp_drawable_apply_operation (drawable, progress,
+                                         C_("undo-type", "Oilify"),
+                                         node);
+          g_object_unref (node);
+        }
+      else
+        success = FALSE;
+    }
+
+  return gimp_procedure_get_return_values (procedure, success,
+                                           error ? *error : NULL);
+}
+
+static GimpValueArray *
+plug_in_oilify_enhanced2_invoker (GimpProcedure         *procedure,
+                                  Gimp                  *gimp,
+                                  GimpContext           *context,
+                                  GimpProgress          *progress,
+                                  const GimpValueArray  *args,
+                                  GError               **error)
+{
+  gboolean success = TRUE;
+  GimpDrawable *drawable;
+  gint32 mode;
+  gint32 mask_size;
+  GimpDrawable *mask_size_map;
+  gint32 exponent;
+  GimpDrawable *exponent_map;
+
+  drawable = gimp_value_get_drawable (gimp_value_array_index (args, 2), gimp);
+  mode = g_value_get_int (gimp_value_array_index (args, 3));
+  mask_size = g_value_get_int (gimp_value_array_index (args, 4));
+  mask_size_map = gimp_value_get_drawable (gimp_value_array_index (args, 5), gimp);
+  exponent = g_value_get_int (gimp_value_array_index (args, 6));
+  exponent_map = gimp_value_get_drawable (gimp_value_array_index (args, 7), gimp);
+
+  if (success)
+    {
+      if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                     GIMP_PDB_ITEM_CONTENT, error) &&
+          gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+        {
+          GeglNode *node;
+
+          node = gegl_node_new_child (NULL,
+                                      "operation",   "gegl:oilify",
+                                      "mask-radius", MAX (1, mask_size / 2),
+                                      "use-inten",   mode ? TRUE : FALSE,
+                                      "exponent",    exponent,
+                                      NULL);
+
+          if (mask_size_map)
+            {
+              GeglNode *src_node;
+              src_node = create_buffer_source_node (node, mask_size_map);
+              gegl_node_connect_to (src_node, "output", node, "aux");
+            }
+
+          if (exponent_map)
+            {
+              GeglNode *src_node;
+              src_node = create_buffer_source_node (node, exponent_map);
+              gegl_node_connect_to (src_node, "output", node, "aux2");
+            }
+
+          gimp_drawable_apply_operation (drawable, progress,
+                                         C_("undo-type", "Oilify"),
                                          node);
           g_object_unref (node);
         }
@@ -5831,6 +6120,66 @@ register_plug_in_compat_procs (GimpPDB *pdb)
   g_object_unref (procedure);
 
   /*
+   * gimp-plug-in-emboss
+   */
+  procedure = gimp_procedure_new (plug_in_emboss_invoker);
+  gimp_object_set_static_name (GIMP_OBJECT (procedure),
+                               "plug-in-emboss");
+  gimp_procedure_set_static_strings (procedure,
+                                     "plug-in-emboss",
+                                     "Simulate an image created by embossing",
+                                     "Emboss or Bumpmap the given drawable, specifying the angle and elevation for the light source.",
+                                     "Compatibility procedure. Please see 'gegl:emboss' for credits.",
+                                     "Compatibility procedure. Please see 'gegl:emboss' for credits.",
+                                     "2019",
+                                     NULL);
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_enum ("run-mode",
+                                                  "run mode",
+                                                  "The run mode",
+                                                  GIMP_TYPE_RUN_MODE,
+                                                  GIMP_RUN_INTERACTIVE,
+                                                  GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_image_id ("image",
+                                                         "image",
+                                                         "Input image (unused)",
+                                                         pdb->gimp, FALSE,
+                                                         GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_drawable_id ("drawable",
+                                                            "drawable",
+                                                            "Input drawable",
+                                                            pdb->gimp, FALSE,
+                                                            GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("azimuth",
+                                                    "azimuth",
+                                                    "The Light Angle (degrees)",
+                                                    0.0, 360.0, 0.0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("elevation",
+                                                    "elevation",
+                                                    "The Elevation Angle (degrees)",
+                                                    0.0, 180, 0.0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_int32 ("depth",
+                                                      "depth",
+                                                      "The Filter Width",
+                                                      1, 99, 1,
+                                                      GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_boolean ("emboss",
+                                                     "emboss",
+                                                     "Emboss (TRUE), Bumpmap (FALSE)",
+                                                     FALSE,
+                                                     GIMP_PARAM_READWRITE));
+  gimp_pdb_register_procedure (pdb, procedure);
+  g_object_unref (procedure);
+
+  /*
    * gimp-plug-in-engrave
    */
   procedure = gimp_procedure_new (plug_in_engrave_invoker);
@@ -7013,6 +7362,114 @@ register_plug_in_compat_procs (GimpPDB *pdb)
   g_object_unref (procedure);
 
   /*
+   * gimp-plug-in-newsprint
+   */
+  procedure = gimp_procedure_new (plug_in_newsprint_invoker);
+  gimp_object_set_static_name (GIMP_OBJECT (procedure),
+                               "plug-in-newsprint");
+  gimp_procedure_set_static_strings (procedure,
+                                     "plug-in-newsprint",
+                                     "Halftone the image to give newspaper-like effect",
+                                     "Halftone the image to give newspaper-like effect",
+                                     "Compatibility procedure. Please see 'gegl:newsprint' for credits.",
+                                     "Compatibility procedure. Please see 'gegl:newsprint' for credits.",
+                                     "2019",
+                                     NULL);
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_enum ("run-mode",
+                                                  "run mode",
+                                                  "The run mode",
+                                                  GIMP_TYPE_RUN_MODE,
+                                                  GIMP_RUN_INTERACTIVE,
+                                                  GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_image_id ("image",
+                                                         "image",
+                                                         "Input image (unused)",
+                                                         pdb->gimp, FALSE,
+                                                         GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_drawable_id ("drawable",
+                                                            "drawable",
+                                                            "Input drawable",
+                                                            pdb->gimp, FALSE,
+                                                            GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_int32 ("cell-width",
+                                                      "cell width",
+                                                      "Screen cell width in pixels",
+                                                      0, 1500, 0,
+                                                      GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_int32 ("colorspace",
+                                                      "colorspace",
+                                                      "Separate to { GRAYSCALE (0), RGB (1), CMYK (2), LUMINANCE (3) }",
+                                                      0, 3, 0,
+                                                      GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_int32 ("k-pullout",
+                                                      "k pullout",
+                                                      "Percentage of black to pullout (CMYK only)",
+                                                      0, 100, 0,
+                                                      GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("gry-ang",
+                                                    "gry ang",
+                                                    "Grey/black screen angle (degrees)",
+                                                    0.0, 360.0, 0.0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_int32 ("gry-spotfn",
+                                                      "gry spotfn",
+                                                      "Grey/black spot function { DOTS (0), LINES (1), DIAMONDS (2), EUCLIDIAN-DOT (3), PS-DIAMONDS (4) }",
+                                                      0, 4, 0,
+                                                      GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("red-ang",
+                                                    "red ang",
+                                                    "Red/cyan screen angle (degrees)",
+                                                    0.0, 360.0, 0.0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_int32 ("red-spotfn",
+                                                      "red spotfn",
+                                                      "Red/cyan spot function { DOTS (0), LINES (1), DIAMONDS (2), EUCLIDIAN-DOT (3), PS-DIAMONDS (4) }",
+                                                      0, 4, 0,
+                                                      GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("grn-ang",
+                                                    "grn ang",
+                                                    "Green/magenta screen angle (degrees)",
+                                                    0.0, 360.0, 0.0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_int32 ("grn-spotfn",
+                                                      "grn spotfn",
+                                                      "Green/magenta spot function { DOTS (0), LINES (1), DIAMONDS (2), EUCLIDIAN-DOT (3), PS-DIAMONDS (4) }",
+                                                      0, 4, 0,
+                                                      GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_double ("blu-ang",
+                                                    "blu ang",
+                                                    "Blue/yellow screen angle (degrees)",
+                                                    0.0, 360.0, 0.0,
+                                                    GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_int32 ("blu-spotfn",
+                                                      "blu spotfn",
+                                                      "Blue/yellow spot function { DOTS (0), LINES (1), DIAMONDS (2), EUCLIDIAN-DOT (3), PS-DIAMONDS (4) }",
+                                                      0, 4, 0,
+                                                      GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_int32 ("oversample",
+                                                      "oversample",
+                                                      "how many times to oversample spot fn",
+                                                      0, 128, 0,
+                                                      GIMP_PARAM_READWRITE));
+  gimp_pdb_register_procedure (pdb, procedure);
+  g_object_unref (procedure);
+
+  /*
    * gimp-plug-in-normalize
    */
   procedure = gimp_procedure_new (plug_in_normalize_invoker);
@@ -7118,6 +7575,120 @@ register_plug_in_compat_procs (GimpPDB *pdb)
                                                       "Random hue",
                                                       0, 360, 0,
                                                       GIMP_PARAM_READWRITE));
+  gimp_pdb_register_procedure (pdb, procedure);
+  g_object_unref (procedure);
+
+  /*
+   * gimp-plug-in-oilify2
+   */
+  procedure = gimp_procedure_new (plug_in_oilify2_invoker);
+  gimp_object_set_static_name (GIMP_OBJECT (procedure),
+                               "plug-in-oilify2");
+  gimp_procedure_set_static_strings (procedure,
+                                     "plug-in-oilify2",
+                                     "Smear colors to simulate an oil painting",
+                                     "This function performs the well-known oil-paint effect on the specified drawable.",
+                                     "Compatibility procedure. Please see 'gegl:oilify' for credits.",
+                                     "Compatibility procedure. Please see 'gegl:oilify' for credits.",
+                                     "2019",
+                                     NULL);
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_enum ("run-mode",
+                                                  "run mode",
+                                                  "The run mode",
+                                                  GIMP_TYPE_RUN_MODE,
+                                                  GIMP_RUN_INTERACTIVE,
+                                                  GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_image_id ("image",
+                                                         "image",
+                                                         "Input image (unused)",
+                                                         pdb->gimp, FALSE,
+                                                         GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_drawable_id ("drawable",
+                                                            "drawable",
+                                                            "Input drawable",
+                                                            pdb->gimp, FALSE,
+                                                            GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_int32 ("mask-size",
+                                                      "mask size",
+                                                      "Oil paint mask size",
+                                                      1, 200, 1,
+                                                      GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_int32 ("mode",
+                                                      "mode",
+                                                      "Algorithm { RGB (0), INTENSITY (1) }",
+                                                      0, 1, 0,
+                                                      GIMP_PARAM_READWRITE));
+  gimp_pdb_register_procedure (pdb, procedure);
+  g_object_unref (procedure);
+
+  /*
+   * gimp-plug-in-oilify-enhanced2
+   */
+  procedure = gimp_procedure_new (plug_in_oilify_enhanced2_invoker);
+  gimp_object_set_static_name (GIMP_OBJECT (procedure),
+                               "plug-in-oilify-enhanced2");
+  gimp_procedure_set_static_strings (procedure,
+                                     "plug-in-oilify-enhanced2",
+                                     "Smear colors to simulate an oil painting",
+                                     "This function performs the well-known oil-paint effect on the specified drawable.",
+                                     "Compatibility procedure. Please see 'gegl:oilify' for credits.",
+                                     "Compatibility procedure. Please see 'gegl:oilify' for credits.",
+                                     "2019",
+                                     NULL);
+  gimp_procedure_add_argument (procedure,
+                               g_param_spec_enum ("run-mode",
+                                                  "run mode",
+                                                  "The run mode",
+                                                  GIMP_TYPE_RUN_MODE,
+                                                  GIMP_RUN_INTERACTIVE,
+                                                  GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_image_id ("image",
+                                                         "image",
+                                                         "Input image (unused)",
+                                                         pdb->gimp, FALSE,
+                                                         GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_drawable_id ("drawable",
+                                                            "drawable",
+                                                            "Input drawable",
+                                                            pdb->gimp, FALSE,
+                                                            GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_int32 ("mode",
+                                                      "mode",
+                                                      "Algorithm { RGB (0), INTENSITY (1) }",
+                                                      0, 1, 0,
+                                                      GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_int32 ("mask-size",
+                                                      "mask size",
+                                                      "Oil paint mask size",
+                                                      1, 200, 1,
+                                                      GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_drawable_id ("mask-size-map",
+                                                            "mask size map",
+                                                            "Mask size control map",
+                                                            pdb->gimp, TRUE,
+                                                            GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_int32 ("exponent",
+                                                      "exponent",
+                                                      "Oil paint exponent",
+                                                      1, 20, 1,
+                                                      GIMP_PARAM_READWRITE));
+  gimp_procedure_add_argument (procedure,
+                               gimp_param_spec_drawable_id ("exponent-map",
+                                                            "exponent map",
+                                                            "Exponent control map",
+                                                            pdb->gimp, TRUE,
+                                                            GIMP_PARAM_READWRITE));
   gimp_pdb_register_procedure (pdb, procedure);
   g_object_unref (procedure);
 

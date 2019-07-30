@@ -78,17 +78,17 @@ plugins_query_invoker (GimpProcedure         *procedure,
   return_vals = gimp_procedure_get_return_values (procedure, TRUE, NULL);
 
   g_value_set_int (gimp_value_array_index (return_vals, 1), num_plugins);
-  gimp_value_take_stringarray (gimp_value_array_index (return_vals, 2), menu_path, num_plugins);
+  gimp_value_take_string_array (gimp_value_array_index (return_vals, 2), menu_path, num_plugins);
   g_value_set_int (gimp_value_array_index (return_vals, 3), num_plugins);
-  gimp_value_take_stringarray (gimp_value_array_index (return_vals, 4), plugin_accelerator, num_plugins);
+  gimp_value_take_string_array (gimp_value_array_index (return_vals, 4), plugin_accelerator, num_plugins);
   g_value_set_int (gimp_value_array_index (return_vals, 5), num_plugins);
-  gimp_value_take_stringarray (gimp_value_array_index (return_vals, 6), plugin_location, num_plugins);
+  gimp_value_take_string_array (gimp_value_array_index (return_vals, 6), plugin_location, num_plugins);
   g_value_set_int (gimp_value_array_index (return_vals, 7), num_plugins);
-  gimp_value_take_stringarray (gimp_value_array_index (return_vals, 8), plugin_image_type, num_plugins);
+  gimp_value_take_string_array (gimp_value_array_index (return_vals, 8), plugin_image_type, num_plugins);
   g_value_set_int (gimp_value_array_index (return_vals, 9), num_plugins);
-  gimp_value_take_int32array (gimp_value_array_index (return_vals, 10), plugin_install_time, num_plugins);
+  gimp_value_take_int32_array (gimp_value_array_index (return_vals, 10), plugin_install_time, num_plugins);
   g_value_set_int (gimp_value_array_index (return_vals, 11), num_plugins);
-  gimp_value_take_stringarray (gimp_value_array_index (return_vals, 12), plugin_real_name, num_plugins);
+  gimp_value_take_string_array (gimp_value_array_index (return_vals, 12), plugin_real_name, num_plugins);
 
   return return_vals;
 }
@@ -247,7 +247,7 @@ plugin_icon_register_invoker (GimpProcedure         *procedure,
   procedure_name = g_value_get_string (gimp_value_array_index (args, 0));
   icon_type = g_value_get_enum (gimp_value_array_index (args, 1));
   icon_data_length = g_value_get_int (gimp_value_array_index (args, 2));
-  icon_data = gimp_value_get_int8array (gimp_value_array_index (args, 3));
+  icon_data = gimp_value_get_int8_array (gimp_value_array_index (args, 3));
 
   if (success)
     {
@@ -340,62 +340,6 @@ plugin_get_pdb_error_handler_invoker (GimpProcedure         *procedure,
 
   if (success)
     g_value_set_enum (gimp_value_array_index (return_vals, 1), handler);
-
-  return return_vals;
-}
-
-static GimpValueArray *
-plugin_enable_precision_invoker (GimpProcedure         *procedure,
-                                 Gimp                  *gimp,
-                                 GimpContext           *context,
-                                 GimpProgress          *progress,
-                                 const GimpValueArray  *args,
-                                 GError               **error)
-{
-  gboolean success = TRUE;
-  GimpPlugIn *plug_in = gimp->plug_in_manager->current_plug_in;
-
-  if (plug_in)
-    {
-      gimp_plug_in_enable_precision (plug_in);
-    }
-  else
-    {
-      success = FALSE;
-    }
-
-  return gimp_procedure_get_return_values (procedure, success,
-                                           error ? *error : NULL);
-}
-
-static GimpValueArray *
-plugin_precision_enabled_invoker (GimpProcedure         *procedure,
-                                  Gimp                  *gimp,
-                                  GimpContext           *context,
-                                  GimpProgress          *progress,
-                                  const GimpValueArray  *args,
-                                  GError               **error)
-{
-  gboolean success = TRUE;
-  GimpValueArray *return_vals;
-  gboolean enabled = FALSE;
-
-  GimpPlugIn *plug_in = gimp->plug_in_manager->current_plug_in;
-
-  if (plug_in)
-    {
-      enabled = gimp_plug_in_precision_enabled (plug_in);
-    }
-  else
-    {
-      success = FALSE;
-    }
-
-  return_vals = gimp_procedure_get_return_values (procedure, success,
-                                                  error ? *error : NULL);
-
-  if (success)
-    g_value_set_boolean (gimp_value_array_index (return_vals, 1), enabled);
 
   return return_vals;
 }
@@ -706,46 +650,6 @@ register_plug_in_procs (GimpPDB *pdb)
                                                       GIMP_TYPE_PDB_ERROR_HANDLER,
                                                       GIMP_PDB_ERROR_HANDLER_INTERNAL,
                                                       GIMP_PARAM_READWRITE));
-  gimp_pdb_register_procedure (pdb, procedure);
-  g_object_unref (procedure);
-
-  /*
-   * gimp-plugin-enable-precision
-   */
-  procedure = gimp_procedure_new (plugin_enable_precision_invoker);
-  gimp_object_set_static_name (GIMP_OBJECT (procedure),
-                               "gimp-plugin-enable-precision");
-  gimp_procedure_set_static_strings (procedure,
-                                     "gimp-plugin-enable-precision",
-                                     "Switches this plug-in to using the real bit depth of drawables.",
-                                     "Switches this plug-in to using the real bit depth of drawables. This setting can only be enabled, and not disabled again during the lifetime of the plug-in. Using 'gimp-drawable-get-buffer', 'gimp-drawable-get-shadow-buffer' or 'gimp-drawable-get-format' will automatically call this function.",
-                                     "Michael Natterer <mitch@gimp.org>",
-                                     "Michael Natterer",
-                                     "2012",
-                                     NULL);
-  gimp_pdb_register_procedure (pdb, procedure);
-  g_object_unref (procedure);
-
-  /*
-   * gimp-plugin-precision-enabled
-   */
-  procedure = gimp_procedure_new (plugin_precision_enabled_invoker);
-  gimp_object_set_static_name (GIMP_OBJECT (procedure),
-                               "gimp-plugin-precision-enabled");
-  gimp_procedure_set_static_strings (procedure,
-                                     "gimp-plugin-precision-enabled",
-                                     "Whether this plug-in is using the real bit depth of drawables.",
-                                     "Returns whether this plug-in is using the real bit depth of drawables, which can be more than 8 bits per channel.",
-                                     "Michael Natterer <mitch@gimp.org>",
-                                     "Michael Natterer",
-                                     "2012",
-                                     NULL);
-  gimp_procedure_add_return_value (procedure,
-                                   g_param_spec_boolean ("enabled",
-                                                         "enabled",
-                                                         "Whether precision is enabled",
-                                                         FALSE,
-                                                         GIMP_PARAM_READWRITE));
   gimp_pdb_register_procedure (pdb, procedure);
   g_object_unref (procedure);
 }

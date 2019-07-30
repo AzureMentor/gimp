@@ -376,15 +376,13 @@ run (const gchar      *name,
      GimpParam       **return_vals)
 {
   static GimpParam  values[7];
-  GimpRunMode       run_mode;
   GimpPDBStatusType status   = GIMP_PDB_SUCCESS;
   gint32            image_ID = -1;
   PopplerDocument  *doc      = NULL;
   GError           *error    = NULL;
 
-  run_mode = param[0].data.d_int32;
-
   INIT_I18N ();
+  gegl_init (NULL, NULL);
 
   *nreturn_vals = 1;
   *return_vals  = values;
@@ -395,7 +393,9 @@ run (const gchar      *name,
   if (strcmp (name, LOAD_PROC) == 0 || strcmp (name, LOAD2_PROC) == 0)
     {
       PdfSelectedPages pages = { 0, NULL };
+      GimpRunMode      run_mode;
 
+      run_mode = param[0].data.d_int32;
       switch (run_mode)
         {
         case GIMP_RUN_INTERACTIVE:
@@ -584,7 +584,8 @@ run (const gchar      *name,
 
           doc = open_document (param[0].data.d_string,
                                loadvals.PDF_password,
-                               run_mode, &error);
+                               GIMP_RUN_NONINTERACTIVE,
+                               &error);
 
           if (doc)
             {
@@ -611,6 +612,7 @@ run (const gchar      *name,
                                       GIMP_RGB);
 
               gimp_image_undo_disable (image);
+
 
               layer_from_surface (image, "thumbnail", 0, surface, 0.0, 1.0);
               cairo_surface_destroy (surface);
@@ -659,6 +661,8 @@ run (const gchar      *name,
     }
 
   values[0].data.d_status = status;
+
+  gegl_exit ();
 }
 
 static PopplerDocument*
@@ -751,10 +755,11 @@ layer_from_surface (gint32           image,
                     gdouble          progress_start,
                     gdouble          progress_scale)
 {
-  gint32 layer = gimp_layer_new_from_surface (image, layer_name, surface,
-                                              progress_start,
-                                              progress_start + progress_scale);
+  gint32 layer;
 
+  layer = gimp_layer_new_from_surface (image, layer_name, surface,
+                                       progress_start,
+                                       progress_start + progress_scale);
   gimp_image_insert_layer (image, layer, -1, position);
 
   return layer;

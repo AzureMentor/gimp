@@ -91,7 +91,6 @@
 #include "gimppluginmanager-help-domain.h"
 #include "gimppluginmanager-locale-domain.h"
 #include "gimptemporaryprocedure.h"
-#include "plug-in-params.h"
 
 #include "gimp-intl.h"
 
@@ -839,9 +838,7 @@ gimp_plug_in_main_loop (GimpPlugIn *plug_in)
 
   proc_frame->main_loop = g_main_loop_new (NULL, FALSE);
 
-  gimp_threads_leave (plug_in->manager->gimp);
   g_main_loop_run (proc_frame->main_loop);
-  gimp_threads_enter (plug_in->manager->gimp);
 
   g_clear_pointer (&proc_frame->main_loop, g_main_loop_unref);
 }
@@ -1046,20 +1043,4 @@ gimp_plug_in_get_error_handler (GimpPlugIn *plug_in)
     return proc_frame->error_handler;
 
   return GIMP_PDB_ERROR_HANDLER_INTERNAL;
-}
-
-void
-gimp_plug_in_enable_precision (GimpPlugIn *plug_in)
-{
-  g_return_if_fail (GIMP_IS_PLUG_IN (plug_in));
-
-  plug_in->precision = TRUE;
-}
-
-gboolean
-gimp_plug_in_precision_enabled (GimpPlugIn *plug_in)
-{
-  g_return_val_if_fail (GIMP_IS_PLUG_IN (plug_in), FALSE);
-
-  return plug_in->precision;
 }

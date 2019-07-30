@@ -315,8 +315,8 @@ gimp_brush_select_button_init (GimpBrushSelectButton *button)
  * @paint_mode: Initial paint mode.  -1 means to use current paint mode.
  *
  * Creates a new #GtkWidget that completely controls the selection of
- * a #GimpBrush.  This widget is suitable for placement in a table in
- * a plug-in dialog.
+ * a brush. This widget is suitable for placement in a table in a
+ * plug-in dialog.
  *
  * Returns: A #GtkWidget that you can use in your UI.
  *
@@ -477,14 +477,9 @@ gimp_brush_select_button_finalize (GObject *object)
 {
   GimpBrushSelectButtonPrivate *priv = GET_PRIVATE (object);
 
-  g_free (priv->brush_name);
-  priv->brush_name = NULL;
-
-  g_free (priv->mask_data);
-  priv->mask_data = NULL;
-
-  g_free (priv->title);
-  priv->title = NULL;
+  g_clear_pointer (&priv->brush_name, g_free);
+  g_clear_pointer (&priv->mask_data,  g_free);
+  g_clear_pointer (&priv->title,      g_free);
 
   G_OBJECT_CLASS (gimp_brush_select_button_parent_class)->finalize (object);
 }

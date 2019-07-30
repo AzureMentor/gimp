@@ -1,13 +1,13 @@
 ## Process this file with automake to produce Makefile.in
 
 # The name of the module.
-DOC_MODULE = libgimpwidgets
+DOC_MODULE = libgimpwidgets3
 
 # The top-level SGML file.
 DOC_MAIN_SGML_FILE = $(DOC_MODULE)-docs.sgml
 
 # The directory containing the source code.
-DOC_SOURCE_DIR = $(top_srcdir)/$(DOC_MODULE)
+DOC_SOURCE_DIR = $(top_srcdir)/libgimpwidgets
 
 # Extra options to pass to gtkdoc-scangobj
 # make sure babl is initialized, otherwise we segfault.
@@ -20,7 +20,12 @@ SCAN_OPTIONS = --deprecated-guards="GIMP_DISABLE_DEPRECATED"
 MKDB_OPTIONS = --sgml-mode --output-format=xml --name-space=gimp
 
 # Extra options to supply to gtkdoc-fixref
-FIXXREF_OPTIONS = --extra-dir=../libgimpbase/html --extra-dir=../libgimpcolor/html --extra-dir=../libgimpconfig/html --extra-dir=../libgimpmath/html --extra-dir=../libgimp/html
+FIXXREF_OPTIONS = \
+	--extra-dir=../libgimpbase/html		\
+	--extra-dir=../libgimpcolor/html	\
+	--extra-dir=../libgimpconfig/html	\
+	--extra-dir=../libgimpmath/html		\
+	--extra-dir=../libgimp/html
 
 # Used for dependencies
 HFILE_GLOB = $(DOC_SOURCE_DIR)/*.h
@@ -28,6 +33,8 @@ CFILE_GLOB = $(DOC_SOURCE_DIR)/*.c
 
 # Header files to ignore when scanning
 IGNORE_HFILES = \
+	gimp-icon-pixbufs.h		\
+	gimp-color-picker-cursors.h	\
 	gimpcolorprofilestore-private.h	\
 	gimpeevl.h			\
 	gimpwidgets-private.h
@@ -63,7 +70,6 @@ GTKDOC_CFLAGS = \
 	@GEGL_CFLAGS@					\
 	@GTK_CFLAGS@					\
 	-DGIMP_ENABLE_CONTROLLER_UNDER_CONSTRUCTION	\
-	-UGTK_DISABLE_SINGLE_INCLUDES			\
 	-UGIMP_DISABLE_DEPRECATED
 
 GTKDOC_LIBS = \

@@ -6,6 +6,8 @@
 /align-layers.exe
 /animation-optimize
 /animation-optimize.exe
+/animation-play
+/animation-play.exe
 /blinds
 /blinds.exe
 /border-average
@@ -34,8 +36,6 @@
 /despeckle.exe
 /destripe
 /destripe.exe
-/emboss
-/emboss.exe
 /file-aa
 /file-aa.exe
 /file-cel
@@ -108,8 +108,6 @@
 /file-xwd.exe
 /film
 /film.exe
-/filter-pack
-/filter-pack.exe
 /goat-exercise
 /goat-exercise.exe
 /gradient-map
@@ -124,12 +122,8 @@
 /jigsaw.exe
 /mail
 /mail.exe
-/newsprint
-/newsprint.exe
 /nl-filter
 /nl-filter.exe
-/oilify
-/oilify.exe
 /plugin-browser
 /plugin-browser.exe
 /procedure-browser

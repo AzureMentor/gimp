@@ -531,17 +531,6 @@ gimp_unit_format_string (const gchar *format,
  * GIMP_TYPE_PARAM_UNIT
  */
 
-#define GIMP_PARAM_SPEC_UNIT(pspec) (G_TYPE_CHECK_INSTANCE_CAST ((pspec), GIMP_TYPE_PARAM_UNIT, GimpParamSpecUnit))
-
-typedef struct _GimpParamSpecUnit GimpParamSpecUnit;
-
-struct _GimpParamSpecUnit
-{
-  GParamSpecInt parent_instance;
-
-  gboolean      allow_percent;
-};
-
 static void      gimp_param_unit_class_init     (GParamSpecClass *class);
 static gboolean  gimp_param_unit_value_validate (GParamSpec      *pspec,
                                                  GValue          *value);
@@ -618,7 +607,7 @@ gimp_param_unit_value_validate (GParamSpec *pspec,
  * Creates a param spec to hold a units param.
  * See g_param_spec_internal() for more information.
  *
- * Returns: a newly allocated #GParamSpec instance
+ * Returns: (transfer full): a newly allocated #GParamSpec instance
  *
  * Since: 2.4
  **/

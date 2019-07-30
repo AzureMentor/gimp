@@ -45,14 +45,14 @@
 #include <libgimp/gimpimagecolorprofile.h>
 #include <libgimp/gimplayer.h>
 #include <libgimp/gimppaletteselect.h>
+#include <libgimp/gimpparamspecs.h>
 #include <libgimp/gimppatternselect.h>
 #include <libgimp/gimppixbuf.h>
-#include <libgimp/gimppixelrgn.h>
 #include <libgimp/gimpplugin.h>
 #include <libgimp/gimpproceduraldb.h>
+#include <libgimp/gimpprocedure.h>
 #include <libgimp/gimpprogress.h>
 #include <libgimp/gimpselection.h>
-#include <libgimp/gimptile.h>
 
 #include <libgimp/gimp_pdb_headers.h>
 
@@ -70,9 +70,39 @@ G_BEGIN_DECLS
 #define gimp_set_data         gimp_procedural_db_set_data
 
 
+/**
+ * GimpInitProc:
+ *
+ * The init procedure is run at every GIMP startup.
+ */
 typedef void (* GimpInitProc)  (void);
+
+/**
+ * GimpQuitProc:
+ *
+ * The quit procedure is run each time the plug-in ends.
+ */
 typedef void (* GimpQuitProc)  (void);
+
+/**
+ * GimpQueryProc:
+ *
+ * The initialization procedure is run at GIMP startup, only the first
+ * time after a plug-in is installed, or if it has been updated.
+ */
 typedef void (* GimpQueryProc) (void);
+
+/**
+ * GimpRunProc:
+ * @name: the name of the procedure which has been called.
+ * @n_params: the number of parameters passed to the procedure.
+ * @param: (array length=n_params): the parameters passed to @name.
+ * @n_return_vals: (out caller-allocates): the number of values returned by @name.
+ * @return_vals: (array length=n_return_vals) (out callee-allocates): the returned values.
+ *
+ * The run procedure is run during the lifetime of the GIMP session,
+ * each time a plug-in procedure is called.
+ */
 typedef void (* GimpRunProc)   (const gchar      *name,
                                 gint              n_params,
                                 const GimpParam  *param,
@@ -103,14 +133,6 @@ struct _GimpParamDef
   GimpPDBArgType  type;
   gchar          *name;
   gchar          *description;
-};
-
-struct _GimpParamRegion
-{
-  gint32 x;
-  gint32 y;
-  gint32 width;
-  gint32 height;
 };
 
 union _GimpParamData
@@ -149,6 +171,81 @@ struct _GimpParam
   GimpParamData  data;
 };
 
+/**
+ * GIMP_TYPE_PARAM:
+ *
+ * Boxed type representing parameters and returned values, as passed
+ * through the plug-in legacy API.
+ *
+ * Since: 3.0
+ */
+#define GIMP_TYPE_PARAM (gimp_param_get_type ())
+
+GType gimp_param_get_type (void) G_GNUC_CONST;
+
+/**
+ * GIMP_MAIN:
+ * @plug_in_type: The #GType of the plug-in's #GimpPlugIn subclass
+ *
+ * A macro that expands to the appropriate main() function for the
+ * platform being compiled for.
+ *
+ * To use this macro, simply place a line that contains just the code
+ *
+ * GIMP_MAIN (MY_TYPE_PLUG_IN)
+ *
+ * at the toplevel of your file. No semicolon should be used.
+ **/
+
+#ifdef G_OS_WIN32
+
+/* Define WinMain() because plug-ins are built as GUI applications. Also
+ * define a main() in case some plug-in still is built as a console
+ * application.
+ */
+#  ifdef __GNUC__
+#    ifndef _stdcall
+#      define _stdcall __attribute__((stdcall))
+#    endif
+#  endif
+
+#  define GIMP_MAIN(plug_in_type)                       \
+   struct HINSTANCE__;                                  \
+                                                        \
+   int _stdcall                                         \
+   WinMain (struct HINSTANCE__ *hInstance,              \
+            struct HINSTANCE__ *hPrevInstance,          \
+            char *lpszCmdLine,                          \
+            int   nCmdShow);                            \
+                                                        \
+   int _stdcall                                         \
+   WinMain (struct HINSTANCE__ *hInstance,              \
+            struct HINSTANCE__ *hPrevInstance,          \
+            char *lpszCmdLine,                          \
+            int   nCmdShow)                             \
+   {                                                    \
+     return gimp_main (plug_in_type,                    \
+                       _argc, __argv);                  \
+   }                                                    \
+                                                        \
+   int                                                  \
+   main (int argc, char *argv[])                        \
+   {                                                    \
+     /* Use __argc and __argv here, too, as they work   \
+      * better with mingw-w64.                          \
+      */                                                \
+     return gimp_main (plug_in_type,                    \
+                       __argc, __argv);                 \
+   }
+#else
+#  define GIMP_MAIN(plug_in_type)                       \
+   int                                                  \
+   main (int argc, char *argv[])                        \
+   {                                                    \
+     return gimp_main (plug_in_type,                    \
+                       argc, argv);                     \
+   }
+#endif
 
 
 /**
@@ -188,7 +285,8 @@ struct _GimpParam
             char *lpszCmdLine,                          \
             int   nCmdShow)                             \
    {                                                    \
-     return gimp_main (&PLUG_IN_INFO, __argc, __argv);  \
+     return gimp_main_legacy (&PLUG_IN_INFO,            \
+                              _argc, __argv);           \
    }                                                    \
                                                         \
    int                                                  \
@@ -197,22 +295,47 @@ struct _GimpParam
      /* Use __argc and __argv here, too, as they work   \
       * better with mingw-w64.                          \
       */                                                \
-     return gimp_main (&PLUG_IN_INFO, __argc, __argv);  \
+     return gimp_main_legacy (&PLUG_IN_INFO,            \
+                              __argc, __argv);          \
    }
 #else
 #  define MAIN()                                        \
    int                                                  \
    main (int argc, char *argv[])                        \
    {                                                    \
-     return gimp_main (&PLUG_IN_INFO, argc, argv);      \
+     return gimp_main_legacy (&PLUG_IN_INFO,            \
+                              argc, argv);              \
    }
 #endif
 
 
-/* The main procedure that must be called with the PLUG_IN_INFO structure
- * and the 'argc' and 'argv' that are passed to "main".
+void                gimp_plug_in_info_set_callbacks    (GimpPlugInInfo    *info,
+                                                        GimpInitProc       init_proc,
+                                                        GimpQuitProc       quit_proc,
+                                                        GimpQueryProc      query_proc,
+                                                        GimpRunProc        run_proc);
+
+GimpParam         * gimp_param_from_int32              (gint32             value);
+gint32              gimp_param_get_int32               (GimpParam         *param);
+
+GimpParam         * gimp_param_from_status             (GimpPDBStatusType  value);
+GimpPDBStatusType   gimp_param_get_status              (GimpParam         *param);
+
+GimpParam         * gimp_param_from_string             (gchar             *value);
+gchar             * gimp_param_get_string              (GimpParam         *param);
+
+/* The main procedure that must be called with the PLUG_IN_INFO
+ * structure and the 'argc' and 'argv' that are passed to "main".
  */
-gint           gimp_main                (const GimpPlugInInfo *info,
+gint           gimp_main_legacy         (const GimpPlugInInfo *info,
+                                         gint                  argc,
+                                         gchar                *argv[]);
+
+/* The main procedure that must be called with the plug-in's
+ * GimpPlugIn subclass type and the 'argc' and 'argv' that are passed
+ * to "main".
+ */
+gint           gimp_main                (GType                 plug_in_type,
                                          gint                  argc,
                                          gchar                *argv[]);
 
@@ -287,6 +410,14 @@ GimpParam    * gimp_run_procedure2      (const gchar     *name,
                                          gint            *n_return_vals,
                                          gint             n_params,
                                          const GimpParam *params);
+
+/* Run a procedure in the procedure database. The parameters are
+ *  specified as a GimpValueArray, so are the return values.
+ *
+ * FIXME this API is not final!
+ */
+GimpValueArray * gimp_run_procedure_with_array (const gchar    *name,
+                                                GimpValueArray *arguments);
 
 /* Destroy the an array of parameters. This is useful for
  *  destroying the return values returned by a call to

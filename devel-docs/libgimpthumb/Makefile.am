@@ -1,13 +1,13 @@
 ## Process this file with automake to produce Makefile.in
 
 # The name of the module.
-DOC_MODULE = libgimpthumb
+DOC_MODULE = libgimpthumb3
 
 # The top-level SGML file.
 DOC_MAIN_SGML_FILE = $(DOC_MODULE)-docs.sgml
 
 # The directory containing the source code.
-DOC_SOURCE_DIR = $(top_srcdir)/$(DOC_MODULE)
+DOC_SOURCE_DIR = $(top_srcdir)/libgimpthumb
 
 # Extra options to pass to gtkdoc-scangobj
 SCANGOBJ_OPTIONS =
@@ -19,7 +19,8 @@ SCAN_OPTIONS =
 MKDB_OPTIONS = --sgml-mode --output-format=xml --name-space=gimp
 
 # Extra options to supply to gtkdoc-fixref
-FIXXREF_OPTIONS = --extra-dir=../libgimpmath/html
+FIXXREF_OPTIONS = \
+	--extra-dir=../libgimpmath/html
 
 # Used for dependencies
 HFILE_GLOB = $(DOC_SOURCE_DIR)/*.h

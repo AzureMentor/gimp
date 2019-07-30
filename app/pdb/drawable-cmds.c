@@ -71,9 +71,6 @@ drawable_get_format_invoker (GimpProcedure         *procedure,
 
   if (success)
     {
-      if (gimp->plug_in_manager->current_plug_in)
-        gimp_plug_in_enable_precision (gimp->plug_in_manager->current_plug_in);
-
       /* this only transfers the encoding, losing the space, see the
        * code in libgimp/gimpdrawable.c which reconstructs the actual
        * format in the plug-in process
@@ -314,12 +311,6 @@ drawable_bpp_invoker (GimpProcedure         *procedure,
   if (success)
     {
       const Babl *format = gimp_drawable_get_format (drawable);
-
-      if (! gimp->plug_in_manager->current_plug_in ||
-          ! gimp_plug_in_precision_enabled (gimp->plug_in_manager->current_plug_in))
-        {
-          format = gimp_babl_compat_u8_format (format);
-        }
 
       bpp = babl_format_get_bytes_per_pixel (format);
     }
@@ -625,12 +616,6 @@ drawable_get_pixel_invoker (GimpProcedure         *procedure,
     {
       const Babl *format = gimp_drawable_get_format (drawable);
 
-      if (! gimp->plug_in_manager->current_plug_in ||
-          ! gimp_plug_in_precision_enabled (gimp->plug_in_manager->current_plug_in))
-        {
-          format = gimp_babl_compat_u8_format (format);
-        }
-
       if (x_coord < gimp_item_get_width  (GIMP_ITEM (drawable)) &&
           y_coord < gimp_item_get_height (GIMP_ITEM (drawable)))
         {
@@ -651,7 +636,7 @@ drawable_get_pixel_invoker (GimpProcedure         *procedure,
   if (success)
     {
       g_value_set_int (gimp_value_array_index (return_vals, 1), num_channels);
-      gimp_value_take_int8array (gimp_value_array_index (return_vals, 2), pixel, num_channels);
+      gimp_value_take_int8_array (gimp_value_array_index (return_vals, 2), pixel, num_channels);
     }
 
   return return_vals;
@@ -676,17 +661,11 @@ drawable_set_pixel_invoker (GimpProcedure         *procedure,
   x_coord = g_value_get_int (gimp_value_array_index (args, 1));
   y_coord = g_value_get_int (gimp_value_array_index (args, 2));
   num_channels = g_value_get_int (gimp_value_array_index (args, 3));
-  pixel = gimp_value_get_int8array (gimp_value_array_index (args, 4));
+  pixel = gimp_value_get_int8_array (gimp_value_array_index (args, 4));
 
   if (success)
     {
       const Babl *format = gimp_drawable_get_format (drawable);
-
-      if (! gimp->plug_in_manager->current_plug_in ||
-          ! gimp_plug_in_precision_enabled (gimp->plug_in_manager->current_plug_in))
-        {
-          format = gimp_babl_compat_u8_format (format);
-        }
 
       if (gimp_pdb_item_is_modifiable (GIMP_ITEM (drawable),
                                        GIMP_PDB_ITEM_CONTENT, error) &&
@@ -846,7 +825,7 @@ drawable_thumbnail_invoker (GimpProcedure         *procedure,
       g_value_set_int (gimp_value_array_index (return_vals, 2), actual_height);
       g_value_set_int (gimp_value_array_index (return_vals, 3), bpp);
       g_value_set_int (gimp_value_array_index (return_vals, 4), thumbnail_data_count);
-      gimp_value_take_int8array (gimp_value_array_index (return_vals, 5), thumbnail_data, thumbnail_data_count);
+      gimp_value_take_int8_array (gimp_value_array_index (return_vals, 5), thumbnail_data, thumbnail_data_count);
     }
 
   return return_vals;
@@ -928,7 +907,7 @@ drawable_sub_thumbnail_invoker (GimpProcedure         *procedure,
       g_value_set_int (gimp_value_array_index (return_vals, 2), height);
       g_value_set_int (gimp_value_array_index (return_vals, 3), bpp);
       g_value_set_int (gimp_value_array_index (return_vals, 4), thumbnail_data_count);
-      gimp_value_take_int8array (gimp_value_array_index (return_vals, 5), thumbnail_data, thumbnail_data_count);
+      gimp_value_take_int8_array (gimp_value_array_index (return_vals, 5), thumbnail_data, thumbnail_data_count);
     }
 
   return return_vals;
@@ -1246,7 +1225,7 @@ register_drawable_procs (GimpPDB *pdb)
   gimp_procedure_set_static_strings (procedure,
                                      "gimp-drawable-bpp",
                                      "Returns the bytes per pixel.",
-                                     "This procedure returns the number of bytes per pixel, which corresponds to the number of components unless 'gimp-plugin-enable-precision' was called.",
+                                     "This procedure returns the number of bytes per pixel.",
                                      "Spencer Kimball & Peter Mattis",
                                      "Spencer Kimball & Peter Mattis",
                                      "1995-1996",

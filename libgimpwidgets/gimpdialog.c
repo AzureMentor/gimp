@@ -344,7 +344,7 @@ gimp_dialog_response (GtkDialog *dialog,
 
 
 /**
- * gimp_dialog_new:
+ * gimp_dialog_new: (skip)
  * @title:        The dialog's title which will be set with
  *                gtk_window_set_title().
  * @role:         The dialog's @role which will be set with
@@ -395,7 +395,7 @@ gimp_dialog_new (const gchar    *title,
 }
 
 /**
- * gimp_dialog_new_valist:
+ * gimp_dialog_new_valist: (skip)
  * @title:        The dialog's title which will be set with
  *                gtk_window_set_title().
  * @role:         The dialog's @role which will be set with
@@ -467,7 +467,7 @@ gimp_dialog_new_valist (const gchar    *title,
  * except it ensures there is only one help button and automatically
  * sets the RESPONSE_OK widget as the default response.
  *
- * Return value: the button widget that was added.
+ * Return value: (type Gtk.Widget) (transfer none): the button widget that was added.
  **/
 GtkWidget *
 gimp_dialog_add_button (GimpDialog  *dialog,
@@ -516,7 +516,7 @@ gimp_dialog_add_button (GimpDialog  *dialog,
 }
 
 /**
- * gimp_dialog_add_buttons:
+ * gimp_dialog_add_buttons: (skip)
  * @dialog: The @dialog to add buttons to.
  * @...: button_text-response_id pairs.
  *
@@ -537,7 +537,7 @@ gimp_dialog_add_buttons (GimpDialog *dialog,
 }
 
 /**
- * gimp_dialog_add_buttons_valist:
+ * gimp_dialog_add_buttons_valist: (skip)
  * @dialog: The @dialog to add buttons to.
  * @args:   The buttons as va_list.
  *
@@ -673,7 +673,33 @@ gimp_dialog_run (GimpDialog *dialog)
 }
 
 /**
- * gimp_dialogs_show_help_button:
+ * gimp_dialog_set_alternative_button_order_from_array:
+ * @dialog:                         The #GimpDialog
+ * @n_buttons:                      The size of @order
+ * @order: (array length=n_buttons) array of buttons' response ids.
+ *
+ * Reorder @dialog's buttons if "gtk-alternative-button-order" setting
+ * is set to TRUE. This is mostly a wrapper around the GTK function
+ * gtk_dialog_set_alternative_button_order(), except it won't output a
+ * deprecation warning.
+ *
+ * Since: 3.0
+ **/
+void
+gimp_dialog_set_alternative_button_order_from_array (GimpDialog *dialog,
+                                                     gint        n_buttons,
+                                                     gint       *order)
+{
+  /* since we don't know yet what to do about alternative button order,
+   * just hide the warnings for now...
+   */
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS;
+  gtk_dialog_set_alternative_button_order_from_array (dialog, n_buttons, order);
+  G_GNUC_END_IGNORE_DEPRECATIONS;
+}
+
+/**
+ * gimp_dialogs_show_help_button: (skip)
  * @show: whether a help button should be added when creating a GimpDialog
  *
  * This function is for internal use only.

@@ -136,14 +136,77 @@ value_array_shrink (GimpValueArray *value_array)
 GimpValueArray *
 gimp_value_array_new (gint n_prealloced)
 {
-  GimpValueArray *value_array = g_slice_new (GimpValueArray);
+  GimpValueArray *value_array = g_slice_new0 (GimpValueArray);
 
-  value_array->n_values = 0;
-  value_array->n_prealloced = 0;
-  value_array->values = NULL;
   value_array_grow (value_array, n_prealloced, TRUE);
   value_array->n_values = 0;
   value_array->ref_count = 1;
+
+  return value_array;
+}
+
+/**
+ * gimp_value_array_new_from_types:
+ * @first_type: first type in the array, or #G_TYPE_NONE.
+ * @...:        the remaining types in the array, terminated by #G_TYPE_NONE
+ *
+ * Allocate and initialize a new #GimpValueArray, and fill it with
+ * values that are initialized to the types passed.
+ *
+ * Returns: a newly allocated #GimpValueArray
+ *
+ * Since: 3.0
+ */
+GimpValueArray *
+gimp_value_array_new_from_types (GType first_type,
+                                 ...)
+{
+  GimpValueArray *value_array;
+  va_list         va_args;
+
+  va_start (va_args, first_type);
+
+  value_array = gimp_value_array_new_from_types_valist (first_type,
+                                                        va_args);
+
+  va_end (va_args);
+
+  return value_array;
+}
+
+/**
+ * gimp_value_array_new_from_types_valist:
+ * @first_type: first type in the array, or #G_TYPE_NONE.
+ * @va_args:    a va_list of GTypes and values, terminated by #G_TYPE_NONE
+ *
+ * Allocate and initialize a new #GimpValueArray, and fill it with
+ * values that are initialized to the types passed.
+ *
+ * Returns: a newly allocated #GimpValueArray
+ *
+ * Since: 3.0
+ */
+GimpValueArray *
+gimp_value_array_new_from_types_valist (GType   first_type,
+                                        va_list va_args)
+{
+  GimpValueArray *value_array = gimp_value_array_new (0);
+  GType           type;
+
+  type = first_type;
+
+  while (type != G_TYPE_NONE)
+    {
+      GValue value = G_VALUE_INIT;
+
+      g_value_init (&value, type);
+      gimp_value_array_append (value_array, &value);
+      g_value_unset (&value);
+
+      type = va_arg (va_args, GType);
+    }
+
+  va_end (va_args);
 
   return value_array;
 }
@@ -195,6 +258,7 @@ gimp_value_array_unref (GimpValueArray *value_array)
           if (G_VALUE_TYPE (value) != 0) /* we allow unset values in the array */
             g_value_unset (value);
         }
+
       g_free (value_array->values);
       g_slice_free (GimpValueArray, value_array);
     }
@@ -430,13 +494,11 @@ static void
 gimp_param_value_array_finalize (GParamSpec *pspec)
 {
   GimpParamSpecValueArray *aspec = GIMP_PARAM_SPEC_VALUE_ARRAY (pspec);
-  GParamSpecClass *parent_class = g_type_class_peek (g_type_parent (GIMP_TYPE_PARAM_VALUE_ARRAY));
+  GParamSpecClass         *parent_class;
 
-  if (aspec->element_spec)
-    {
-      g_param_spec_unref (aspec->element_spec);
-      aspec->element_spec = NULL;
-    }
+  parent_class = g_type_class_peek (g_type_parent (GIMP_TYPE_PARAM_VALUE_ARRAY));
+
+  g_clear_pointer (&aspec->element_spec, g_param_spec_unref);
 
   parent_class->finalize (pspec);
 }
@@ -447,7 +509,7 @@ gimp_param_value_array_set_default (GParamSpec *pspec,
 {
   GimpParamSpecValueArray *aspec = GIMP_PARAM_SPEC_VALUE_ARRAY (pspec);
 
-  if (!value->data[0].v_pointer && aspec->fixed_n_elements)
+  if (! value->data[0].v_pointer && aspec->fixed_n_elements)
     value->data[0].v_pointer = gimp_value_array_new (aspec->fixed_n_elements);
 
   if (value->data[0].v_pointer)
@@ -462,11 +524,11 @@ static gboolean
 gimp_param_value_array_validate (GParamSpec *pspec,
                                  GValue     *value)
 {
-  GimpParamSpecValueArray *aspec = GIMP_PARAM_SPEC_VALUE_ARRAY (pspec);
-  GimpValueArray *value_array = value->data[0].v_pointer;
-  guint changed = 0;
+  GimpParamSpecValueArray *aspec       = GIMP_PARAM_SPEC_VALUE_ARRAY (pspec);
+  GimpValueArray          *value_array = value->data[0].v_pointer;
+  guint                    changed     = 0;
 
-  if (!value->data[0].v_pointer && aspec->fixed_n_elements)
+  if (! value->data[0].v_pointer && aspec->fixed_n_elements)
     value->data[0].v_pointer = gimp_value_array_new (aspec->fixed_n_elements);
 
   if (value->data[0].v_pointer)

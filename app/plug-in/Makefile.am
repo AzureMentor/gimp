@@ -20,6 +20,8 @@ libappplug_in_a_SOURCES = \
 	\
 	gimpenvirontable.c			\
 	gimpenvirontable.h			\
+	gimpgpparams.c				\
+	gimpgpparams.h				\
 	gimpinterpreterdb.c			\
 	gimpinterpreterdb.h			\
 	gimpplugindebug.c			\
@@ -69,8 +71,6 @@ libappplug_in_a_SOURCES = \
 	\
 	plug-in-menu-path.c			\
 	plug-in-menu-path.h			\
-	plug-in-params.c			\
-	plug-in-params.h			\
 	plug-in-rc.c				\
 	plug-in-rc.h
 

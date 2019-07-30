@@ -23,7 +23,10 @@ m4_define([gimp_binary_age],
 # m4_define([gimp_version], [2.99.1])
 
 # This is the X.Y used in -lgimp-X.Y
-m4_define([gimp_api_version], [3.0])
+m4_define([gimp_api_major_version], [3])
+m4_define([gimp_api_minor_version], [0])
+m4_define([gimp_api_version],
+          [gimp_api_major_version.gimp_api_minor_version])
 
 # Versions used for apps, plugins, tools, pkg-config files, and data,
 # as well as global and user prefs
@@ -46,7 +49,7 @@ m4_define([gimp_full_name], [GNU Image Manipulation Program])
 m4_define([alsa_required_version], [1.0.0])
 m4_define([appstream_glib_required_version], [0.7.7])
 m4_define([atk_required_version], [2.4.0])
-m4_define([babl_required_version], [0.1.66])
+m4_define([babl_required_version], [0.1.68])
 m4_define([cairo_required_version], [1.14.0])
 m4_define([cairo_pdf_required_version], [1.12.2])
 m4_define([fontconfig_required_version], [2.12.4])
@@ -63,6 +66,7 @@ m4_define([gtk_required_version], [3.22.29])
 m4_define([gtkdoc_required_version], [1.0])
 m4_define([harfbuzz_required_version], [0.9.19])
 m4_define([intltool_required_version], [0.40.1])
+m4_define([introspection_required_version], [1.32.0])
 m4_define([lcms_required_version], [2.8])
 m4_define([libgudev_required_version], [167])
 m4_define([libheif_required_version], [1.3.2])
@@ -78,7 +82,7 @@ m4_define([poppler_required_version], [0.69.0])
 m4_define([poppler_data_required_version], [0.4.9])
 m4_define([pycairo_required_version], [1.0.2])
 m4_define([pygtk_required_version], [2.10.4])
-m4_define([python2_required_version], [2.5.0])
+m4_define([python3_required_version], [3.6.0])
 m4_define([rsvg_required_version], [2.40.6])
 m4_define([webkitgtk_required_version], [2.20.3])
 m4_define([webp_required_version], [0.6.0])
@@ -110,6 +114,8 @@ GIMP_INTERFACE_AGE=gimp_interface_age
 GIMP_BINARY_AGE=gimp_binary_age
 GIMP_VERSION=gimp_version
 GIMP_REAL_VERSION=gimp_real_version
+GIMP_API_MAJOR_VERSION=gimp_api_major_version
+GIMP_API_MINOR_VERSION=gimp_api_minor_version
 GIMP_API_VERSION=gimp_api_version
 GIMP_APP_VERSION=gimp_app_version
 GIMP_PLUGIN_VERSION=gimp_plugin_version
@@ -127,6 +133,8 @@ AC_SUBST(GIMP_INTERFACE_AGE)
 AC_SUBST(GIMP_BINARY_AGE)
 AC_SUBST(GIMP_VERSION)
 AC_SUBST(GIMP_REAL_VERSION)
+AC_SUBST(GIMP_API_MAJOR_VERSION)
+AC_SUBST(GIMP_API_MINOR_VERSION)
 AC_SUBST(GIMP_API_VERSION)
 AC_SUBST(GIMP_APP_VERSION)
 AC_SUBST(GIMP_PLUGIN_VERSION)
@@ -172,7 +180,7 @@ PANGOCAIRO_REQUIRED_VERSION=pangocairo_required_version
 PERL_REQUIRED_VERSION=perl_required_version
 POPPLER_REQUIRED_VERSION=poppler_required_version
 POPPLER_DATA_REQUIRED_VERSION=poppler_data_required_version
-PYTHON2_REQUIRED_VERSION=python2_required_version
+PYTHON3_REQUIRED_VERSION=python3_required_version
 RSVG_REQUIRED_VERSION=rsvg_required_version
 WEBKITGTK_REQUIRED_VERSION=webkitgtk_required_version
 WEBP_REQUIRED_VERSION=webp_required_version
@@ -205,7 +213,7 @@ AC_SUBST(PANGOCAIRO_REQUIRED_VERSION)
 AC_SUBST(PERL_REQUIRED_VERSION)
 AC_SUBST(POPPLER_REQUIRED_VERSION)
 AC_SUBST(POPPLER_DATA_REQUIRED_VERSION)
-AC_SUBST(PYTHON2_REQUIRED_VERSION)
+AC_SUBST(PYTHON3_REQUIRED_VERSION)
 AC_SUBST(RSVG_REQUIRED_VERSION)
 AC_SUBST(WEBKITGTK_REQUIRED_VERSION)
 AC_SUBST(WEBP_REQUIRED_VERSION)
@@ -2225,6 +2233,11 @@ AC_ARG_WITH(pdbgen,
 
 AM_CONDITIONAL(WITH_PDBGEN, test "x$with_pdbgen" = xyes)
 
+#################################
+# Check for GObject Introspection
+#################################
+
+GOBJECT_INTROSPECTION_REQUIRE(introspection_required_version)
 
 ##################
 # Check for python
@@ -2240,14 +2253,15 @@ m4_define([pycheck_error], [
   - $1
       *** Please install $2, or skip building the python scripting extension by
       *** passing --disable-python to configure (but then you will not be able
-      *** to use scripts for GIMP that are written in Python)."])
+      *** to use scripts for GIMP that are written in Python)."
+  enable_python="no"])
 
 if test "x$enable_python" != xno; then
   enable_python="yes"
   # check for Python
-  AM_PATH_PYTHON2(python2_required_version,,
-                  [pycheck_error([Python 2 (python2_required_version or newer)], [it])])
-  AM_CHECK_PYTHON_HEADERS(, [pycheck_error([Python 2 headers], [them])])
+  AM_PATH_PYTHON(python3_required_version,,
+                  [pycheck_error([Python 3 (python3_required_version or newer)], [it])])
+  AM_CHECK_PYTHON_HEADERS(, [pycheck_error([Python 3 headers], [them])])
 
   # Win32 needs all symbols resolved for linking, even for DLLs
   # Assume the link library is in $exec_prefix/libs
@@ -2266,19 +2280,21 @@ if test "x$enable_python" != xno; then
   AC_SUBST(PYLINK_LIBS)
   AC_SUBST(PYBIN_PATH)
 
-  # check for PyGTK
-  PKG_CHECK_MODULES(PYGTK, pygtk-2.0 >= pygtk_required_version,,
-                    [pycheck_error([PyGTK pygtk_required_version or newer], [it])])
+  # # check for PyGTK
+  # PKG_CHECK_MODULES(PYGTK, pygtk-2.0 >= pygtk_required_version,,
+  #                   [pycheck_error([PyGTK pygtk_required_version or newer], [it])])
 
-  AC_PATH_PROG(PYGTK_CODEGEN, pygtk-codegen-2.0, no)
-  if test "x$PYGTK_CODEGEN" = xno; then
-     pycheck_error([pygtk-codegen-2.0 script], [it])
-  fi
+  # AC_PATH_PROG(PYGTK_CODEGEN, pygtk-codegen-2.0, no)
+  # if test "x$PYGTK_CODEGEN" = xno; then
+  #    pycheck_error([pygtk-codegen-2.0 script], [it])
+  # fi
 
-  AC_MSG_CHECKING(for pygtk defs)
-  PYGTK_DEFSDIR=`$PKG_CONFIG --variable=defsdir pygtk-2.0`
-  AC_SUBST(PYGTK_DEFSDIR)
-  AC_MSG_RESULT($PYGTK_DEFSDIR)
+  # AC_MSG_CHECKING(for pygtk defs)
+  # PYGTK_DEFSDIR=`$PKG_CONFIG --variable=defsdir pygtk-2.0`
+  # AC_SUBST(PYGTK_DEFSDIR)
+  # AC_MSG_RESULT($PYGTK_DEFSDIR)
+
+  # XXX Check here for something related to Python gobject-introspection & GTK3
 
   PKG_CHECK_MODULES(PYCAIRO, pycairo >= pycairo_required_version,,
                     [pycheck_error([PyCairo pycairo_required_version or newer], [it])])
@@ -2853,6 +2869,8 @@ plug-ins/print/Makefile
 dnl plug-ins/pygimp/Makefile
 dnl plug-ins/pygimp/plug-ins/Makefile
 [
+plug-ins/python/Makefile
+plug-ins/python/python-console/Makefile
 plug-ins/screenshot/Makefile
 plug-ins/script-fu/Makefile
 plug-ins/script-fu/ftx/Makefile
@@ -2863,29 +2881,27 @@ plug-ins/selection-to-path/Makefile
 plug-ins/twain/Makefile
 plug-ins/common/Makefile
 modules/Makefile
-]
-dnl devel-docs/Makefile
-dnl devel-docs/app/Makefile
-dnl devel-docs/app/version
-dnl devel-docs/libgimp/Makefile
-dnl devel-docs/libgimp/version
-dnl devel-docs/libgimpbase/Makefile
-dnl devel-docs/libgimpbase/version
-dnl devel-docs/libgimpconfig/Makefile
-dnl devel-docs/libgimpconfig/version
-dnl devel-docs/libgimpcolor/Makefile
-dnl devel-docs/libgimpcolor/version
-dnl devel-docs/libgimpmath/Makefile
-dnl devel-docs/libgimpmath/version
-dnl devel-docs/libgimpmodule/Makefile
-dnl devel-docs/libgimpmodule/version
-dnl devel-docs/libgimpthumb/Makefile
-dnl devel-docs/libgimpthumb/version
-dnl devel-docs/libgimpwidgets/Makefile
-dnl devel-docs/libgimpwidgets/version
-dnl devel-docs/performance-logs/Makefile
-dnl devel-docs/tools/Makefile
-[
+devel-docs/Makefile
+devel-docs/app/Makefile
+devel-docs/app/version
+devel-docs/libgimp/Makefile
+devel-docs/libgimp/version
+devel-docs/libgimpbase/Makefile
+devel-docs/libgimpbase/version
+devel-docs/libgimpconfig/Makefile
+devel-docs/libgimpconfig/version
+devel-docs/libgimpcolor/Makefile
+devel-docs/libgimpcolor/version
+devel-docs/libgimpmath/Makefile
+devel-docs/libgimpmath/version
+devel-docs/libgimpmodule/Makefile
+devel-docs/libgimpmodule/version
+devel-docs/libgimpthumb/Makefile
+devel-docs/libgimpthumb/version
+devel-docs/libgimpwidgets/Makefile
+devel-docs/libgimpwidgets/version
+devel-docs/performance-logs/Makefile
+devel-docs/tools/Makefile
 docs/Makefile
 menus/Makefile
 cursors/Makefile
@@ -2942,9 +2958,7 @@ m4macros/Makefile
 po/Makefile.in
 po-libgimp/Makefile.in
 po-plug-ins/Makefile.in
-]
-dnl po-python/Makefile.in
-[
+po-python/Makefile.in
 po-script-fu/Makefile.in
 po-tips/Makefile.in
 po-windows-installer/Makefile.in
@@ -2987,7 +3001,7 @@ m4_define([generate_po_makefile], [
 ])
 
 generate_po_makefile([po-libgimp])
-#generate_po_makefile([po-python])
+generate_po_makefile([po-python])
 generate_po_makefile([po-plug-ins])
 generate_po_makefile([po-script-fu])
 generate_po_makefile([po-tips])
@@ -3021,7 +3035,7 @@ Optional Plug-Ins:
   Heif >= 1.4.0:             $have_libheif_1_4_0
   PDF (export):              $have_cairo_pdf
   Print:                     $enable_print
-  Python 2:                  $enable_python
+  Python 3:                  $enable_python
   TWAIN (Win32):             $os_win32
   Webpage:                   $have_webkit
   WMF:                       $have_libwmf

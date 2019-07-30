@@ -1214,26 +1214,26 @@ HELP
     $date = '2015';
 
     @inargs = (
-  { name => 'run_mode', type => 'enum GimpRunMode', dead => 1,
-    desc => 'The run mode' },
-  { name => 'image', type => 'image', dead => 1,
-    desc => 'Input image (unused)' },
-  { name => 'drawable', type => 'drawable',
-    desc => 'Input drawable' },
-  { name => 'amount_x', type => '-500.0 <= float <= 500.0',
-    desc => 'Displace multiplier for radial direction' },
-  { name => 'amount_y', type => '-500.0 <= float <= 500.0',
-    desc => 'Displace multiplier for tangent direction' },
-  { name => 'do_x', type => 'boolean',
-    desc => 'Displace in radial direction ?' },
-  { name => 'do_y', type => 'boolean',
-    desc => 'Displace in tangent direction ?' },
-  { name => 'displace_map_x', type => 'drawable',
-    desc => 'Displacement map for radial direction' },
-  { name => 'displace_map_y', type => 'drawable',
-    desc => 'Displacement map for tangent direction' },
-  { name => 'displace_type', type => '1 <= int32 <= 3',
-    desc => 'Edge behavior { WRAP (1), SMEAR (2), BLACK (3) }' }
+        { name => 'run_mode', type => 'enum GimpRunMode', dead => 1,
+          desc => 'The run mode' },
+        { name => 'image', type => 'image', dead => 1,
+          desc => 'Input image (unused)' },
+        { name => 'drawable', type => 'drawable',
+          desc => 'Input drawable' },
+        { name => 'amount_x', type => '-500.0 <= float <= 500.0',
+          desc => 'Displace multiplier for radial direction' },
+        { name => 'amount_y', type => '-500.0 <= float <= 500.0',
+          desc => 'Displace multiplier for tangent direction' },
+        { name => 'do_x', type => 'boolean',
+          desc => 'Displace in radial direction ?' },
+        { name => 'do_y', type => 'boolean',
+          desc => 'Displace in tangent direction ?' },
+        { name => 'displace_map_x', type => 'drawable',
+          desc => 'Displacement map for radial direction' },
+        { name => 'displace_map_y', type => 'drawable',
+          desc => 'Displacement map for tangent direction' },
+        { name => 'displace_type', type => '1 <= int32 <= 3',
+          desc => 'Edge behavior { WRAP (1), SMEAR (2), BLACK (3) }' }
     );
 
     %invoke = (
@@ -1407,6 +1407,64 @@ HELP
                                      C_("undo-type", "Edge"),
                                      node);
       g_object_unref (node);
+    }
+  else
+    success = FALSE;
+}
+CODE
+    );
+}
+
+sub plug_in_emboss {
+    $blurb = 'Simulate an image created by embossing';
+
+    $help = <<'HELP';
+Emboss or Bumpmap the given drawable, specifying the angle and
+elevation for the light source.
+HELP
+
+    &std_pdb_compat('gegl:emboss');
+    $date = '2019';
+
+    @inargs = (
+	{ name => 'run_mode', type => 'enum GimpRunMode', dead => 1,
+	  desc => 'The run mode' },
+	{ name => 'image', type => 'image', dead => 1,
+	  desc => 'Input image (unused)' },
+	{ name => 'drawable', type => 'drawable',
+	  desc => 'Input drawable' },
+	{ name => 'azimuth', type => '0.0 <= float <= 360.0',
+	  desc => 'The Light Angle (degrees)' },
+	{ name => 'elevation', type => '0.0 <= float <= 180',
+	  desc => 'The Elevation Angle (degrees)' },
+	{ name => 'depth', type => '0 < int32 < 100',
+          default => 1, desc => 'The Filter Width' },
+	{ name => 'emboss', type => 'boolean',
+	  desc => 'Emboss (TRUE), Bumpmap (FALSE)' }
+    );
+
+    %invoke = (
+	code => <<'CODE'
+{
+  if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                 GIMP_PDB_ITEM_CONTENT, error) &&
+      gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+    {
+      GeglNode *node;
+
+      node = gegl_node_new_child (NULL,
+                                  "operation",  "gegl:emboss",
+                                  "type",       emboss ? 0 : 1,
+                                  "azimuth",    azimuth,
+                                  "elevation",  elevation,
+                                  "depth",      depth,
+                                  NULL);
+
+      node = wrap_in_gamma_cast (node, drawable);
+
+      gimp_drawable_apply_operation (drawable, progress,
+                                     C_("undo-type", "Emboss"),
+                                     node);
     }
   else
     success = FALSE;
@@ -2620,6 +2678,98 @@ CODE
     );
 }
 
+sub plug_in_newsprint {
+    $blurb = 'Halftone the image to give newspaper-like effect';
+
+    $help = $blurb;
+
+    &std_pdb_compat('gegl:newsprint');
+    $date = '2019';
+
+    @inargs = (
+        { name => 'run_mode', type => 'enum GimpRunMode', dead => 1,
+          desc => 'The run mode' },
+        { name => 'image', type => 'image', dead => 1,
+          desc => 'Input image (unused)' },
+        { name => 'drawable', type => 'drawable',
+          desc => 'Input drawable' },
+        { name => 'cell_width', type => '0 <= int32 <= 1500',
+          desc => 'Screen cell width in pixels' },
+        { name => 'colorspace', type => '0 <= int32 <= 3',
+          desc => 'Separate to { GRAYSCALE (0), RGB (1), CMYK (2), LUMINANCE (3) }' },
+        { name => 'k_pullout', type => '0 <= int32 <= 100',
+          desc => 'Percentage of black to pullout (CMYK only)' },
+        { name => 'gry_ang', type => '0.0 <= float <= 360.0',
+          desc => 'Grey/black screen angle (degrees)' },
+        { name => 'gry_spotfn', type => '0 <= int32 <= 4',
+          desc => 'Grey/black spot function { DOTS (0), LINES (1), DIAMONDS (2), EUCLIDIAN-DOT (3), PS-DIAMONDS (4) }' },
+        { name => 'red_ang', type => '0.0 <= float <= 360.0',
+          desc => 'Red/cyan screen angle (degrees)' },
+        { name => 'red_spotfn', type => '0 <= int32 <= 4',
+          desc => 'Red/cyan spot function { DOTS (0), LINES (1), DIAMONDS (2), EUCLIDIAN-DOT (3), PS-DIAMONDS (4) }' },
+        { name => 'grn_ang', type => '0.0 <= float <= 360.0',
+          desc => 'Green/magenta screen angle (degrees)' },
+        { name => 'grn_spotfn', type => '0 <= int32 <= 4',
+          desc => 'Green/magenta spot function { DOTS (0), LINES (1), DIAMONDS (2), EUCLIDIAN-DOT (3), PS-DIAMONDS (4) }' },
+        { name => 'blu_ang', type => '0.0 <= float <= 360.0',
+          desc => 'Blue/yellow screen angle (degrees)' },
+        { name => 'blu_spotfn', type => '0 <= int32 <= 4',
+          desc => 'Blue/yellow spot function { DOTS (0), LINES (1), DIAMONDS (2), EUCLIDIAN-DOT (3), PS-DIAMONDS (4) }' },
+        { name => 'oversample', type => '0 <= int32 <= 128',
+          desc => 'how many times to oversample spot fn' }
+    );
+
+    %invoke = (
+        code => <<'CODE'
+{
+  if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                 GIMP_PDB_ITEM_CONTENT, error) &&
+      gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+    {
+      GeglNode *node;
+      gint      color_model = newsprint_color_model (colorspace);
+      gint      pattern     = newsprint_pattern (gry_spotfn);
+      gint      pattern2    = newsprint_pattern (red_spotfn);
+      gint      pattern3    = newsprint_pattern (grn_spotfn);
+      gint      pattern4    = newsprint_pattern (blu_spotfn);
+      gdouble   angle       = newsprint_angle (gry_ang);
+      gdouble   angle2      = newsprint_angle (red_ang);
+      gdouble   angle3      = newsprint_angle (grn_ang);
+      gdouble   angle4      = newsprint_angle (blu_ang);
+
+      node = gegl_node_new_child (NULL,
+                                  "operation",     "gegl:newsprint",
+                                  "color-model",   color_model,
+                                  "black-pullout", (gdouble) k_pullout / 100.0,
+                                  "period",        (gdouble) cell_width,
+                                  "angle",         angle,
+                                  "pattern",       pattern,
+                                  "period2",       (gdouble) cell_width,
+                                  "angle2",        angle2,
+                                  "pattern2",      pattern2,
+                                  "period3",       (gdouble) cell_width,
+                                  "angle3",        angle3,
+                                  "pattern3",      pattern3,
+                                  "period4",       (gdouble) cell_width,
+                                  "angle4",        angle4,
+                                  "pattern4",      pattern4,
+				  "aa-samples",    oversample,
+                                  NULL);
+
+      node = wrap_in_gamma_cast (node, drawable);
+
+      gimp_drawable_apply_operation (drawable, progress,
+                                     C_("undo-type", "Newsprint"),
+                                     node);
+      g_object_unref (node);
+    }
+  else
+    success = FALSE;
+}
+CODE
+    );
+}
+
 sub plug_in_normalize {
     $blurb = 'Stretch brightness values to cover the full range';
 
@@ -2731,6 +2881,129 @@ HELP
 
       gimp_drawable_apply_operation (drawable, progress,
                                      C_("undo-type", "Supernova"),
+                                     node);
+      g_object_unref (node);
+    }
+  else
+    success = FALSE;
+}
+CODE
+    );
+}
+
+sub plug_in_oilify2 {
+    $blurb = 'Smear colors to simulate an oil painting';
+
+    $help = <<'HELP';
+This function performs the well-known oil-paint effect on the
+specified drawable.
+HELP
+
+    &std_pdb_compat('gegl:oilify');
+    $date = '2019';
+
+    @inargs = (
+        { name => 'run_mode', type => 'enum GimpRunMode', dead => 1,
+          desc => 'The run mode' },
+        { name => 'image', type => 'image', dead => 1,
+          desc => 'Input image (unused)' },
+        { name => 'drawable', type => 'drawable',
+          desc => 'Input drawable' },
+        { name => 'mask_size', type => '1 <= int32 <= 200',
+          desc => 'Oil paint mask size' },
+        { name => 'mode', type => '0 <= int32 <= 1',
+          desc => 'Algorithm { RGB (0), INTENSITY (1) }' }
+    );
+
+    %invoke = (
+        code => <<'CODE'
+{
+  if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                 GIMP_PDB_ITEM_CONTENT, error) &&
+      gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+    {
+      GeglNode *node;
+
+      node = gegl_node_new_child (NULL,
+                                  "operation",       "gegl:oilify",
+                                  "mask-radius",     MAX (1, mask_size / 2),
+                                  "use-inten",       mode ? TRUE : FALSE,
+                                  NULL);
+
+      gimp_drawable_apply_operation (drawable, progress,
+                                     C_("undo-type", "Oilify"),
+                                     node);
+      g_object_unref (node);
+    }
+  else
+    success = FALSE;
+}
+CODE
+    );
+}
+
+sub plug_in_oilify_enhanced2 {
+    $blurb = 'Smear colors to simulate an oil painting';
+
+    $help = <<'HELP';
+This function performs the well-known oil-paint effect on the
+specified drawable.
+HELP
+
+    &std_pdb_compat('gegl:oilify');
+    $date = '2019';
+
+    @inargs = (
+        { name => 'run_mode', type => 'enum GimpRunMode', dead => 1,
+          desc => 'The run mode' },
+        { name => 'image', type => 'image', dead => 1,
+          desc => 'Input image (unused)' },
+        { name => 'drawable', type => 'drawable',
+          desc => 'Input drawable' },
+        { name => 'mode', type => '0 <= int32 <= 1',
+          desc => 'Algorithm { RGB (0), INTENSITY (1) }' },
+        { name => 'mask_size', type => '1 <= int32 <= 200',
+          desc => 'Oil paint mask size' },
+        { name => 'mask_size_map', type => 'drawable', none_ok => 1,
+          desc => 'Mask size control map' },
+        { name => 'exponent', type => '1 <= int32 <= 20',
+          desc => 'Oil paint exponent' },
+        { name => 'exponent_map', type => 'drawable', none_ok => 1,
+          desc => 'Exponent control map' }
+    );
+
+    %invoke = (
+        code => <<'CODE'
+{
+  if (gimp_pdb_item_is_attached (GIMP_ITEM (drawable), NULL,
+                                 GIMP_PDB_ITEM_CONTENT, error) &&
+      gimp_pdb_item_is_not_group (GIMP_ITEM (drawable), error))
+    {
+      GeglNode *node;
+
+      node = gegl_node_new_child (NULL,
+                                  "operation",   "gegl:oilify",
+                                  "mask-radius", MAX (1, mask_size / 2),
+                                  "use-inten",   mode ? TRUE : FALSE,
+                                  "exponent",    exponent,
+                                  NULL);
+
+      if (mask_size_map)
+        {
+          GeglNode *src_node;
+          src_node = create_buffer_source_node (node, mask_size_map);
+          gegl_node_connect_to (src_node, "output", node, "aux");
+        }
+
+      if (exponent_map)
+        {
+          GeglNode *src_node;
+          src_node = create_buffer_source_node (node, exponent_map);
+          gegl_node_connect_to (src_node, "output", node, "aux2");
+        }
+
+      gimp_drawable_apply_operation (drawable, progress,
+                                     C_("undo-type", "Oilify"),
                                      node);
       g_object_unref (node);
     }
@@ -4869,7 +5142,7 @@ wrap_in_gamma_cast (GeglNode     *node,
       cast_format =
         gimp_babl_format (gimp_babl_format_get_base_type (drawable_format),
                           gimp_babl_precision (gimp_babl_format_get_component_type (drawable_format),
-                                               TRUE),
+                                               GIMP_TRC_LINEAR),
                           babl_format_has_alpha (drawable_format),
                           babl_format_get_space (drawable_format));
 
@@ -5086,6 +5359,47 @@ gaussian_blur (GimpDrawable  *drawable,
 
   return FALSE;
 }
+
+static gint
+newsprint_color_model (gint colorspace)
+{
+  switch (colorspace)
+    {
+    case 0: return 1; /* black on white */
+    case 1: return 2; /* rgb */
+    case 2: return 3; /* cmyk */
+    case 3: return 1; /* black on white */
+    }
+
+  return 2;
+}
+
+static gint
+newsprint_pattern (gint spotfn)
+{
+  switch (spotfn)
+    {
+    case 0: return 1; /* circle */
+    case 1: return 0; /* line */
+    case 2: return 2; /* diamond */
+    case 3: return 4; /* ps circle */
+    case 4: return 2; /* FIXME postscript diamond */
+    }
+
+  return 1;
+}
+
+static gdouble
+newsprint_angle (gdouble angle)
+{
+  while (angle > 180.0)
+    angle -= 360.0;
+
+  while (angle < -180.0)
+    angle += 360.0;
+
+  return angle;
+}
 CODE
 
 @headers = qw("libgimpbase/gimpbase.h"
@@ -5129,6 +5443,7 @@ CODE
             plug_in_displace_polar
             plug_in_dog
             plug_in_edge
+            plug_in_emboss
             plug_in_engrave
             plug_in_exchange
             plug_in_flarefx
@@ -5149,8 +5464,11 @@ CODE
             plug_in_mblur_inward
             plug_in_mosaic
             plug_in_neon
+            plug_in_newsprint
             plug_in_normalize
             plug_in_nova
+            plug_in_oilify2
+            plug_in_oilify_enhanced2
             plug_in_papertile
             plug_in_photocopy
             plug_in_pixelize

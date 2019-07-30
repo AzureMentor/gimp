@@ -48,6 +48,7 @@ AM_CPPFLAGS = \
 
 align_layers_libexecdir = $(gimpplugindir)/plug-ins/align-layers
 animation_optimize_libexecdir = $(gimpplugindir)/plug-ins/animation-optimize
+animation_play_libexecdir = $(gimpplugindir)/plug-ins/animation-play
 blinds_libexecdir = $(gimpplugindir)/plug-ins/blinds
 border_average_libexecdir = $(gimpplugindir)/plug-ins/border-average
 busy_dialog_libexecdir = $(gimpplugindir)/plug-ins/busy-dialog
@@ -62,7 +63,6 @@ decompose_libexecdir = $(gimpplugindir)/plug-ins/decompose
 depth_merge_libexecdir = $(gimpplugindir)/plug-ins/depth-merge
 despeckle_libexecdir = $(gimpplugindir)/plug-ins/despeckle
 destripe_libexecdir = $(gimpplugindir)/plug-ins/destripe
-emboss_libexecdir = $(gimpplugindir)/plug-ins/emboss
 file_aa_libexecdir = $(gimpplugindir)/plug-ins/file-aa
 file_cel_libexecdir = $(gimpplugindir)/plug-ins/file-cel
 file_compressor_libexecdir = $(gimpplugindir)/plug-ins/file-compressor
@@ -99,7 +99,6 @@ file_xmc_libexecdir = $(gimpplugindir)/plug-ins/file-xmc
 file_xpm_libexecdir = $(gimpplugindir)/plug-ins/file-xpm
 file_xwd_libexecdir = $(gimpplugindir)/plug-ins/file-xwd
 film_libexecdir = $(gimpplugindir)/plug-ins/film
-filter_pack_libexecdir = $(gimpplugindir)/plug-ins/filter-pack
 goat_exercise_libexecdir = $(gimpplugindir)/plug-ins/goat-exercise
 gradient_map_libexecdir = $(gimpplugindir)/plug-ins/gradient-map
 grid_libexecdir = $(gimpplugindir)/plug-ins/grid
@@ -107,9 +106,7 @@ guillotine_libexecdir = $(gimpplugindir)/plug-ins/guillotine
 hot_libexecdir = $(gimpplugindir)/plug-ins/hot
 jigsaw_libexecdir = $(gimpplugindir)/plug-ins/jigsaw
 mail_libexecdir = $(gimpplugindir)/plug-ins/mail
-newsprint_libexecdir = $(gimpplugindir)/plug-ins/newsprint
 nl_filter_libexecdir = $(gimpplugindir)/plug-ins/nl-filter
-oilify_libexecdir = $(gimpplugindir)/plug-ins/oilify
 plugin_browser_libexecdir = $(gimpplugindir)/plug-ins/plugin-browser
 procedure_browser_libexecdir = $(gimpplugindir)/plug-ins/procedure-browser
 qbist_libexecdir = $(gimpplugindir)/plug-ins/qbist
@@ -129,6 +126,7 @@ web_page_libexecdir = $(gimpplugindir)/plug-ins/web-page
 
 align_layers_libexec_PROGRAMS = align-layers
 animation_optimize_libexec_PROGRAMS = animation-optimize
+animation_play_libexec_PROGRAMS = animation-play
 blinds_libexec_PROGRAMS = blinds
 border_average_libexec_PROGRAMS = border-average
 busy_dialog_libexec_PROGRAMS = busy-dialog
@@ -143,7 +141,6 @@ decompose_libexec_PROGRAMS = decompose
 depth_merge_libexec_PROGRAMS = depth-merge
 despeckle_libexec_PROGRAMS = despeckle
 destripe_libexec_PROGRAMS = destripe
-emboss_libexec_PROGRAMS = emboss
 file_aa_libexec_PROGRAMS = $(FILE_AA)
 file_cel_libexec_PROGRAMS = file-cel
 file_compressor_libexec_PROGRAMS = file-compressor
@@ -180,7 +177,6 @@ file_xmc_libexec_PROGRAMS = $(FILE_XMC)
 file_xpm_libexec_PROGRAMS = $(FILE_XPM)
 file_xwd_libexec_PROGRAMS = file-xwd
 film_libexec_PROGRAMS = film
-filter_pack_libexec_PROGRAMS = filter-pack
 goat_exercise_libexec_PROGRAMS = goat-exercise
 gradient_map_libexec_PROGRAMS = gradient-map
 grid_libexec_PROGRAMS = grid
@@ -188,9 +184,7 @@ guillotine_libexec_PROGRAMS = guillotine
 hot_libexec_PROGRAMS = hot
 jigsaw_libexec_PROGRAMS = jigsaw
 mail_libexec_PROGRAMS = $(MAIL)
-newsprint_libexec_PROGRAMS = newsprint
 nl_filter_libexec_PROGRAMS = nl-filter
-oilify_libexec_PROGRAMS = oilify
 plugin_browser_libexec_PROGRAMS = plugin-browser
 procedure_browser_libexec_PROGRAMS = procedure-browser
 qbist_libexec_PROGRAMS = qbist
@@ -265,6 +259,24 @@ animation_optimize_LDADD = \
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(animation_optimize_RC)
+
+animation_play_SOURCES = \
+	animation-play.c
+
+animation_play_LDADD = \
+	$(libgimpui)		\
+	$(libgimpwidgets)	\
+	$(libgimpmodule)	\
+	$(libgimp)		\
+	$(libgimpmath)		\
+	$(libgimpconfig)	\
+	$(libgimpcolor)		\
+	$(libgimpbase)		\
+	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
+	$(RT_LIBS)		\
+	$(INTLLIBS)		\
+	$(animation_play_RC)
 
 blinds_SOURCES = \
 	blinds.c
@@ -475,6 +487,7 @@ depth_merge_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(depth_merge_RC)
@@ -514,23 +527,6 @@ destripe_LDADD = \
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(destripe_RC)
-
-emboss_SOURCES = \
-	emboss.c
-
-emboss_LDADD = \
-	$(libgimpui)		\
-	$(libgimpwidgets)	\
-	$(libgimpmodule)	\
-	$(libgimp)		\
-	$(libgimpmath)		\
-	$(libgimpconfig)	\
-	$(libgimpcolor)		\
-	$(libgimpbase)		\
-	$(GTK_LIBS)		\
-	$(RT_LIBS)		\
-	$(INTLLIBS)		\
-	$(emboss_RC)
 
 file_aa_SOURCES = \
 	file-aa.c
@@ -896,6 +892,7 @@ file_pdf_load_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(POPPLER_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
@@ -1204,23 +1201,6 @@ film_LDADD = \
 	$(INTLLIBS)		\
 	$(film_RC)
 
-filter_pack_SOURCES = \
-	filter-pack.c
-
-filter_pack_LDADD = \
-	$(libgimpui)		\
-	$(libgimpwidgets)	\
-	$(libgimpmodule)	\
-	$(libgimp)		\
-	$(libgimpmath)		\
-	$(libgimpconfig)	\
-	$(libgimpcolor)		\
-	$(libgimpbase)		\
-	$(GTK_LIBS)		\
-	$(RT_LIBS)		\
-	$(INTLLIBS)		\
-	$(filter_pack_RC)
-
 goat_exercise_SOURCES = \
 	goat-exercise.c
 
@@ -1339,23 +1319,6 @@ mail_LDADD = \
 	$(INTLLIBS)		\
 	$(mail_RC)
 
-newsprint_SOURCES = \
-	newsprint.c
-
-newsprint_LDADD = \
-	$(libgimpui)		\
-	$(libgimpwidgets)	\
-	$(libgimpmodule)	\
-	$(libgimp)		\
-	$(libgimpmath)		\
-	$(libgimpconfig)	\
-	$(libgimpcolor)		\
-	$(libgimpbase)		\
-	$(GTK_LIBS)		\
-	$(RT_LIBS)		\
-	$(INTLLIBS)		\
-	$(newsprint_RC)
-
 nl_filter_SOURCES = \
 	nl-filter.c
 
@@ -1373,23 +1336,6 @@ nl_filter_LDADD = \
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(nl_filter_RC)
-
-oilify_SOURCES = \
-	oilify.c
-
-oilify_LDADD = \
-	$(libgimpui)		\
-	$(libgimpwidgets)	\
-	$(libgimpmodule)	\
-	$(libgimp)		\
-	$(libgimpmath)		\
-	$(libgimpconfig)	\
-	$(libgimpcolor)		\
-	$(libgimpbase)		\
-	$(GTK_LIBS)		\
-	$(RT_LIBS)		\
-	$(INTLLIBS)		\
-	$(oilify_RC)
 
 plugin_browser_SOURCES = \
 	plugin-browser.c
@@ -1599,6 +1545,7 @@ warp_LDADD = \
 	$(libgimpcolor)		\
 	$(libgimpbase)		\
 	$(GTK_LIBS)		\
+	$(GEGL_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
 	$(warp_RC)

@@ -480,7 +480,7 @@ sanity_check_babl (void)
 
 #define BABL_REQUIRED_MAJOR 0
 #define BABL_REQUIRED_MINOR 1
-#define BABL_REQUIRED_MICRO 66
+#define BABL_REQUIRED_MICRO 68
 
   babl_get_version (&babl_major_version,
                     &babl_minor_version,
@@ -660,12 +660,15 @@ sanity_check_gegl_ops (void)
     "gegl:map-relative",
     "gegl:matting-global",
     "gegl:maze",
+    "gegl:mean-curvature-blur",
     "gegl:median-blur",
     "gegl:mirrors",
     "gegl:mono-mixer",
+    "gegl:mosaic",
     "gegl:motion-blur-circular",
     "gegl:motion-blur-linear",
     "gegl:motion-blur-zoom",
+    "gegl:newsprint",
     "gegl:noise-cie-lch",
     "gegl:noise-hsv",
     "gegl:noise-hurl",

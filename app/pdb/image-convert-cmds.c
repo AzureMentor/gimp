@@ -36,8 +36,6 @@
 #include "core/gimppalette.h"
 #include "core/gimpparamspecs.h"
 #include "gegl/gimp-babl.h"
-#include "plug-in/gimpplugin.h"
-#include "plug-in/gimppluginmanager.h"
 
 #include "gimppdb.h"
 #include "gimppdberror.h"
@@ -204,7 +202,7 @@ image_convert_set_dither_matrix_invoker (GimpProcedure         *procedure,
   width = g_value_get_int (gimp_value_array_index (args, 0));
   height = g_value_get_int (gimp_value_array_index (args, 1));
   matrix_length = g_value_get_int (gimp_value_array_index (args, 2));
-  matrix = gimp_value_get_int8array (gimp_value_array_index (args, 3));
+  matrix = gimp_value_get_int8_array (gimp_value_array_index (args, 3));
 
   if (success)
     {
@@ -242,9 +240,6 @@ image_convert_precision_invoker (GimpProcedure         *procedure,
 
   if (success)
     {
-      if (gimp->plug_in_manager->current_plug_in)
-        gimp_plug_in_enable_precision (gimp->plug_in_manager->current_plug_in);
-
       if (gimp_pdb_image_is_not_base_type (image, GIMP_INDEXED, error) &&
           gimp_pdb_image_is_not_precision (image, precision, error)    &&
           gimp_babl_is_valid (gimp_image_get_base_type (image), precision))

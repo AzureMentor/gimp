@@ -173,7 +173,7 @@ CODE
 		}
 	    }
 
-	    $outargs .= eval qq/"  $arg->{set_value_func};\n"/;
+	    $outargs .= eval qq/"  $arg->{take_value_func};\n"/;
 	}
 
 	$outargs =~ s/^/' ' x 2/meg if $success;
@@ -552,10 +552,10 @@ CODE
     }
     elsif ($pdbtype eq 'colorarray') {
 	$pspec = <<CODE;
-gimp_param_spec_color_array ("$name",
-                             "$nick",
-                             "$blurb",
-                             $flags)
+gimp_param_spec_rgb_array ("$name",
+                           "$nick",
+                           "$blurb",
+                           $flags)
 CODE
     }
     else {
